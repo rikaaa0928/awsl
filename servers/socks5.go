@@ -28,12 +28,12 @@ func (s Socke5Server) Listen() net.Listener {
 }
 
 // ReadRemote server
-func (s Socke5Server) ReadRemote(c net.Conn) (string, string, error) {
+func (s Socke5Server) ReadRemote(c net.Conn) (ANetAddr, error) {
 	log.Printf("read")
 	n, d := tools.Receive(c)
 	log.Printf("read: %d : %#v\n", n, d[:n])
 	if !bytes.Equal([]byte{d[0]}, []byte("\x05")) {
-		return "", "", errors.New("not socks5")
+		return ANetAddr{}, errors.New("not socks5")
 	}
 	//stage1 respons
 	d = []byte("\x05\x00")
@@ -42,15 +42,21 @@ func (s Socke5Server) ReadRemote(c net.Conn) (string, string, error) {
 	//stage2 receive
 	n, d = tools.Receive(c)
 	log.Printf("read: %d : %#v\n", n, d[:n])
-	remoteHost := getRemoteHost(d)
+	addr := ANetAddr{}
+	var err error
+	addr.Host = getRemoteHost(d)
 	remotePort := getRemotePort(d)
-	log.Println("rh=" + remoteHost)
+	log.Println("rh=" + addr.Host)
 	log.Println("rp=" + remotePort)
+	addr.Port, err = strconv.Atoi(remotePort)
+	if err != nil {
+		return addr, err
+	}
 	//stage2 respons
 	d = []byte("\x05\x00\x00\x01\x00\x00\x00\x00\xff\xff")
 	n = tools.Send(c, d)
 	log.Printf("write:%#v:n="+strconv.Itoa(n)+"\n", d)
-	return remoteHost, remotePort, nil
+	return addr, nil
 }
 
 func getRemoteHost(data []byte) (s string) {

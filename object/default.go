@@ -1,6 +1,10 @@
 package object
 
-import "github.com/Evi1/awsl/clients"
+import (
+	"github.com/Evi1/awsl/clients"
+	"github.com/Evi1/awsl/router"
+	"strconv"
+)
 
 import "github.com/Evi1/awsl/servers"
 
@@ -12,17 +16,18 @@ import "log"
 
 // DefaultObject default
 type DefaultObject struct {
-	C     clients.Client
-	S     servers.Server
-	Msg   chan DefaultRemoteMsg
+	C     []clients.Client
+	S     []servers.Server
+	R     router.Router
+	Msg   []chan DefaultRemoteMsg
 	Close chan int8
 	stop  bool
 }
 
 type DefaultRemoteMsg struct {
 	c net.Conn
-	h string
-	p string
+	a servers.ANetAddr
+	r int
 }
 
 // Run object
@@ -38,16 +43,22 @@ func (o *DefaultObject) Stop() {
 }
 
 func (o *DefaultObject) handelClient() {
+	for i := range o.C {
+		o.handelOneClient(i)
+	}
+}
+
+func (o *DefaultObject) handelOneClient(i int) {
 	for !o.stop {
 		select {
-		case m := <-o.Msg:
+		case m := <-o.Msg[i]:
 			log.Printf("%+v\n", m)
-			c, err := o.C.Dail(m.h, m.p)
+			c, err := o.C[i].Dail(m.a.Host, strconv.Itoa(m.a.Port))
 			if err != nil {
 				log.Println(err)
 				return
 			}
-			o.C.Verify(c)
+			o.C[i].Verify(c)
 			go tools.PipeThenClose(m.c, c)
 			go tools.PipeThenClose(c, m.c)
 		case <-o.Close:
@@ -57,22 +68,35 @@ func (o *DefaultObject) handelClient() {
 }
 
 func (o *DefaultObject) handelServer() {
+	i := 0
+	for i < len(o.S)-1 {
+		go o.handelOneServer(i)
+		i++
+	}
+	o.handelOneServer(i)
+}
+
+func (o *DefaultObject) handelOneServer(i int) {
 	log.Println("server")
-	l := o.S.Listen()
+	l := o.S[i].Listen()
 	for !o.stop {
 		c, err := l.Accept()
 		log.Println("income")
 		if err != nil {
-			// handle error
 			log.Println(err)
 			return
 		}
 		go func() {
-			h, p, e := o.S.ReadRemote(c)
+			addr, e := o.S[i].ReadRemote(c)
 			if e != nil {
+				log.Println(err)
 				return
 			}
-			o.Msg <- DefaultRemoteMsg{c: c, h: h, p: p}
+			r := o.R.Route(addr)
+			if r > len(o.Msg)-1 {
+				r = 0
+			}
+			o.Msg[r] <- DefaultRemoteMsg{c: c, a: addr, r: r}
 		}()
 	}
 }
