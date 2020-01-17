@@ -77,11 +77,10 @@ func (o *DefaultObject) handelServer() {
 }
 
 func (o *DefaultObject) handelOneServer(i int) {
-	log.Println("server")
+	log.Println("server: " + strconv.Itoa(i))
 	l := o.S[i].Listen()
 	for !o.stop {
 		c, err := l.Accept()
-		log.Println("income")
 		if err != nil {
 			log.Println(err)
 			return

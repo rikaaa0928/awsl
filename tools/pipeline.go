@@ -1,6 +1,7 @@
 package tools
 
 import (
+	"io"
 	"log"
 	"net"
 	"time"
@@ -24,14 +25,24 @@ func PipeThenClose(src, dst net.Conn) {
 		// should always process n > 0 bytes before handling error
 		if n > 0 {
 			// Note: avoid overwrite err returned by Read.
-			log.Println(n, buf[:n])
 			if _, err := dst.Write(buf[0:n]); err != nil {
-				log.Println("write:", err)
+				log.Println("pip write:", err)
 				break
 			}
 		}
 		if err != nil {
-			log.Println(err)
+			e, ok := err.(*net.OpError)
+			if ok && !e.Temporary() {
+				break
+			}
+			et, ok := err.(net.Error)
+			if ok && et.Temporary() {
+				continue
+			}
+			if err == io.EOF {
+				break
+			}
+			log.Println("pip read: " + err.Error())
 			break
 		}
 	}
