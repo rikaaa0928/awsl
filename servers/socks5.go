@@ -43,15 +43,11 @@ func (s Socke5Server) ReadRemote(c net.Conn) (ANetAddr, error) {
 	n, d = tools.Receive(c)
 	log.Printf("read: %d : %#v\n", n, d[:n])
 	addr := ANetAddr{}
-	var err error
-	addr.Host = getRemoteHost(d)
+	addr.Host, addr.Typ = getRemoteHost(d)
 	remotePort := getRemotePort(d)
 	log.Println("rh=" + addr.Host)
-	log.Println("rp=" + remotePort)
-	addr.Port, err = strconv.Atoi(remotePort)
-	if err != nil {
-		return addr, err
-	}
+	log.Printf("rp=%v\n", remotePort)
+	addr.Port = remotePort
 	//stage2 respons
 	d = []byte("\x05\x00\x00\x01\x00\x00\x00\x00\xff\xff")
 	n = tools.Send(c, d)
@@ -59,12 +55,14 @@ func (s Socke5Server) ReadRemote(c net.Conn) (ANetAddr, error) {
 	return addr, nil
 }
 
-func getRemoteHost(data []byte) (s string) {
+func getRemoteHost(data []byte) (s string, t int) {
 	if data[3] == byte(0x03) {
 		s = string(data[5 : len(data)-2])
+		t = 1
 		return
 	}
 	if data[3] == byte(0x01) {
+		t = 4
 		for i := 0; i < len(data)-6; i++ {
 			t := data[4+i]
 			x := int(t)
@@ -75,6 +73,7 @@ func getRemoteHost(data []byte) (s string) {
 		}
 		return
 	}
+	t = 6
 	s += "["
 	for i := 0; i < len(data)-7; i += 2 {
 		s += strconv.FormatInt(int64(data[4+i]), 16)
@@ -87,14 +86,13 @@ func getRemoteHost(data []byte) (s string) {
 	return
 }
 
-func getRemotePort(data []byte) (s string) {
+func getRemotePort(data []byte) (x int) {
 	tt := data[len(data)-2:]
 	t := []byte{0x00, 0x00}
 	t = append(t, tt...)
 	tb := bytes.NewBuffer(t)
 	var y int32
 	binary.Read(tb, binary.BigEndian, &y)
-	x := int(y)
-	s = strconv.Itoa(x)
+	x = int(y)
 	return
 }

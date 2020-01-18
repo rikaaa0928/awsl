@@ -24,6 +24,7 @@ type DefaultObject struct {
 	stop  bool
 }
 
+// DefaultRemoteMsg DEFAULT
 type DefaultRemoteMsg struct {
 	c net.Conn
 	a servers.ANetAddr
@@ -53,7 +54,7 @@ func (o *DefaultObject) handelOneClient(i int) {
 		select {
 		case m := <-o.Msg[i]:
 			log.Printf("%+v\n", m)
-			c, err := o.C[i].Dail(m.a.Host, strconv.Itoa(m.a.Port))
+			c, err := o.C[i].Dial(m.a.Host, strconv.Itoa(m.a.Port))
 			if err != nil {
 				log.Println(err)
 				return

@@ -2,8 +2,9 @@ package servers
 
 import "net"
 
+// ANetAddr addr
 type ANetAddr struct {
-	Type int //4 6 1
+	Typ  int //4 6 1
 	Host string
 	Port int
 }
