@@ -10,23 +10,25 @@ import (
 
 // AWSL AWSL
 type AWSL struct {
-	Host     string
-	HostName string
 }
 
 // Dial Dial
 func (c AWSL) Dial(h string, p string) (net.Conn, error) {
-	config, _ := websocket.NewConfig(c.Host, "")
+	config, err := websocket.NewConfig("wss://"+h+":"+p+"/wss", "wss://"+h+":"+p+"/wss")
+	if err != nil {
+		log.Println("conf:" + err.Error())
+		return nil, err
+	}
 	config.TlsConfig = &tls.Config{
 		InsecureSkipVerify: true,
-		ServerName:         c.HostName,
+		ServerName:         h,
 	}
 	ws, err := websocket.DialConfig(config)
 	// ws, err := websocket.Dial(url, "", origin)
 	if err != nil {
-		log.Fatal(err)
+		log.Println("dial:" + err.Error())
 	}
-	return ws, nil
+	return ws, err
 }
 
 // Verify Verify
