@@ -1,9 +1,12 @@
 package clients
 
-import "net"
+import (
+	"github.com/Evi1/awsl/servers"
+	"net"
+)
 
 // Client listen and handel incomming
 type Client interface {
-	Dial(h string, p string) (net.Conn, error)
+	Dial(servers.ANetAddr) (net.Conn, error)
 	Verify(net.Conn) error
 }

@@ -4,6 +4,7 @@ import (
 	"github.com/Evi1/awsl/clients"
 	"github.com/Evi1/awsl/router"
 	"strconv"
+	"sync"
 )
 
 import "github.com/Evi1/awsl/servers"
@@ -13,6 +14,21 @@ import "net"
 import "github.com/Evi1/awsl/tools"
 
 import "log"
+
+func NewDefault(cs []clients.Client, ss []servers.Server) *DefaultObject {
+	m := make([]chan DefaultRemoteMsg, len(cs))
+	for i := range m {
+		m[i] = make(chan DefaultRemoteMsg, 10)
+	}
+	return &DefaultObject{
+		C:     cs,
+		S:     ss,
+		R:     router.ARouter{},
+		Msg:   m,
+		Close: make(chan int8),
+		stop:  false,
+	}
+}
 
 // DefaultObject default
 type DefaultObject struct {
@@ -54,7 +70,7 @@ func (o *DefaultObject) handelOneClient(i int) {
 		select {
 		case m := <-o.Msg[i]:
 			log.Printf("%+v\n", m)
-			c, err := o.C[i].Dial(m.a.Host, strconv.Itoa(m.a.Port))
+			c, err := o.C[i].Dial(m.a)
 			if err != nil {
 				log.Println(err)
 				return
@@ -69,12 +85,12 @@ func (o *DefaultObject) handelOneClient(i int) {
 }
 
 func (o *DefaultObject) handelServer() {
-	i := 0
-	for i < len(o.S)-1 {
+	var w sync.WaitGroup
+	for i := range o.S {
+		w.Add(1)
 		go o.handelOneServer(i)
-		i++
 	}
-	o.handelOneServer(i)
+	w.Wait()
 }
 
 func (o *DefaultObject) handelOneServer(i int) {

@@ -11,6 +11,14 @@ import (
 	"strconv"
 )
 
+// NewSocks5 NewSocks5
+func NewSocks5(listenHost string, listenPort string) Socke5Server {
+	return Socke5Server{
+		IP:   listenHost,
+		Port: listenPort,
+	}
+}
+
 // Socke5Server socks5
 type Socke5Server struct {
 	IP   string
