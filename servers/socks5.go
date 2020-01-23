@@ -5,10 +5,12 @@ import (
 	"encoding/binary"
 	"errors"
 	"fmt"
-	"github.com/Evi1/awsl/tools"
 	"log"
 	"net"
 	"strconv"
+
+	"github.com/Evi1/awsl/model"
+	"github.com/Evi1/awsl/tools"
 )
 
 // NewSocks5 NewSocks5
@@ -36,12 +38,12 @@ func (s Socke5Server) Listen() net.Listener {
 }
 
 // ReadRemote server
-func (s Socke5Server) ReadRemote(c net.Conn) (ANetAddr, error) {
+func (s Socke5Server) ReadRemote(c net.Conn) (model.ANetAddr, error) {
 	log.Printf("read")
 	n, d := tools.Receive(c)
 	log.Printf("read: %d : %#v\n", n, d[:n])
 	if !bytes.Equal([]byte{d[0]}, []byte("\x05")) {
-		return ANetAddr{}, errors.New("not socks5")
+		return model.ANetAddr{}, errors.New("not socks5")
 	}
 	//stage1 respons
 	d = []byte("\x05\x00")
@@ -50,7 +52,7 @@ func (s Socke5Server) ReadRemote(c net.Conn) (ANetAddr, error) {
 	//stage2 receive
 	n, d = tools.Receive(c)
 	log.Printf("read: %d : %#v\n", n, d[:n])
-	addr := ANetAddr{}
+	addr := model.ANetAddr{}
 	addr.Host, addr.Typ = getRemoteHost(d)
 	remotePort := getRemotePort(d)
 	log.Println("rh=" + addr.Host)

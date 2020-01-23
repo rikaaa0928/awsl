@@ -1,12 +1,14 @@
 package test
 
 import (
-	"github.com/Evi1/awsl/clients"
-	"github.com/Evi1/awsl/servers"
 	"log"
 	"net"
 	"testing"
 	"time"
+
+	"github.com/Evi1/awsl/clients"
+	"github.com/Evi1/awsl/model"
+	"github.com/Evi1/awsl/servers"
 )
 
 func TestAWSL(t *testing.T) {
@@ -43,7 +45,7 @@ func TestAWSL(t *testing.T) {
 	}()
 	log.Print("start")
 	time.Sleep(time.Second)
-	conn, err := c.Dial(servers.ANetAddr{
+	conn, err := c.Dial(model.ANetAddr{
 		Typ:  1,
 		Host: "bilibili.network",
 		Port: 443,

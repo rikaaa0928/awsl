@@ -2,9 +2,11 @@ package servers
 
 import (
 	"encoding/json"
-	"golang.org/x/net/websocket"
 	"net"
 	"net/http"
+
+	"github.com/Evi1/awsl/model"
+	"golang.org/x/net/websocket"
 )
 
 // NewAWSL NewAWSL
@@ -55,13 +57,13 @@ func (s *AWSL) Listen() net.Listener {
 }
 
 // ReadRemote server
-func (s *AWSL) ReadRemote(c net.Conn) (ANetAddr, error) {
+func (s *AWSL) ReadRemote(c net.Conn) (model.ANetAddr, error) {
 	jsonBytes := make([]byte, 1024)
 	n, err := c.Read(jsonBytes)
 	if err != nil {
-		return ANetAddr{}, err
+		return model.ANetAddr{}, err
 	}
-	addr := ANetAddr{}
+	addr := model.ANetAddr{}
 	err = json.Unmarshal(jsonBytes[:n], &addr)
 	return addr, err
 }
@@ -73,15 +75,18 @@ type AWSListener struct {
 	Port string
 }
 
+// Accept Accept
 func (l *AWSListener) Accept() (net.Conn, error) {
 	c := <-l.C
 	return c, nil
 }
 
+// Close Close
 func (l *AWSListener) Close() error {
 	return nil
 }
 
+// Addr Addr
 func (l AWSListener) Addr() net.Addr {
 	return &net.IPAddr{
 		IP:   net.ParseIP(l.IP),

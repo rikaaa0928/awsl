@@ -1,8 +1,8 @@
 package router
 
-import "github.com/Evi1/awsl/servers"
+import "github.com/Evi1/awsl/model"
 
 // Router router
 type Router interface {
-	Route(addr servers.ANetAddr) int
+	Route(addr model.ANetAddr) int
 }

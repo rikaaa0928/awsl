@@ -1,16 +1,13 @@
 package servers
 
-import "net"
+import (
+	"net"
 
-// ANetAddr addr
-type ANetAddr struct {
-	Typ  int //4 6 1
-	Host string
-	Port int
-}
+	"github.com/Evi1/awsl/model"
+)
 
 // Server listen and handel incomming
 type Server interface {
 	Listen() net.Listener
-	ReadRemote(net.Conn) (ANetAddr, error)
+	ReadRemote(net.Conn) (model.ANetAddr, error)
 }

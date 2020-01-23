@@ -1,7 +1,7 @@
 package clients
 
 import (
-	"github.com/Evi1/awsl/servers"
+	"github.com/Evi1/awsl/model"
 	"net"
 	"strconv"
 )
@@ -10,7 +10,7 @@ import (
 type DirectOut struct{}
 
 // Dial Dial
-func (c DirectOut) Dial(addr servers.ANetAddr) (net.Conn, error) {
+func (c DirectOut) Dial(addr model.ANetAddr) (net.Conn, error) {
 	return net.Dial("tcp", addr.Host+":"+strconv.Itoa(addr.Port))
 }
 

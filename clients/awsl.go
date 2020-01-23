@@ -3,17 +3,19 @@ package clients
 import (
 	"crypto/tls"
 	"encoding/json"
-	"github.com/Evi1/awsl/servers"
-	"golang.org/x/net/websocket"
 	"log"
 	"net"
+
+	"github.com/Evi1/awsl/model"
+	"golang.org/x/net/websocket"
 )
 
+// NewAWSL NewAWSL
 func NewAWSL(serverHost, serverPort, uri string) AWSL {
 	return AWSL{
 		ServerHost: serverHost,
 		ServerPort: serverPort,
-		Uri:        uri,
+		URI:        uri,
 	}
 }
 
@@ -21,12 +23,12 @@ func NewAWSL(serverHost, serverPort, uri string) AWSL {
 type AWSL struct {
 	ServerHost string
 	ServerPort string
-	Uri        string
+	URI        string
 }
 
 // Dial Dial
-func (c AWSL) Dial(addr servers.ANetAddr) (net.Conn, error) {
-	config, err := websocket.NewConfig("wss://"+c.ServerHost+":"+c.ServerPort+"/"+c.Uri, "wss://"+c.ServerHost+":"+c.ServerPort+"/"+c.Uri)
+func (c AWSL) Dial(addr model.ANetAddr) (net.Conn, error) {
+	config, err := websocket.NewConfig("wss://"+c.ServerHost+":"+c.ServerPort+"/"+c.URI, "wss://"+c.ServerHost+":"+c.ServerPort+"/"+c.URI)
 	if err != nil {
 		log.Println("conf:" + err.Error())
 		return nil, err
@@ -41,16 +43,23 @@ func (c AWSL) Dial(addr servers.ANetAddr) (net.Conn, error) {
 		log.Println("dial:" + err.Error())
 		return ws, err
 	}
-	addrBytes, err := json.Marshal(addr)
-	if err != nil {
-		log.Println("dial json:" + err.Error())
-		return ws, err
-	}
-	_, err = ws.Write(addrBytes)
-	return ws, err
+	conn := awslConn{Conn: ws, Addr: addr}
+	return conn, err
 }
 
 // Verify Verify
 func (c AWSL) Verify(conn net.Conn) error {
-	return nil
+	ws := conn.(awslConn)
+	addrBytes, err := json.Marshal(ws.Addr)
+	if err != nil {
+		log.Println("json marshal:" + err.Error())
+		return err
+	}
+	_, err = ws.Write(addrBytes)
+	return err
+}
+
+type awslConn struct {
+	*websocket.Conn
+	Addr model.ANetAddr
 }

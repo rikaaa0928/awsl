@@ -1,19 +1,17 @@
 package object
 
 import (
-	"github.com/Evi1/awsl/clients"
-	"github.com/Evi1/awsl/router"
+	"log"
+	"net"
 	"strconv"
 	"sync"
+
+	"github.com/Evi1/awsl/clients"
+	"github.com/Evi1/awsl/model"
+	"github.com/Evi1/awsl/router"
+	"github.com/Evi1/awsl/servers"
+	"github.com/Evi1/awsl/tools"
 )
-
-import "github.com/Evi1/awsl/servers"
-
-import "net"
-
-import "github.com/Evi1/awsl/tools"
-
-import "log"
 
 func NewDefault(cs []clients.Client, ss []servers.Server) *DefaultObject {
 	m := make([]chan DefaultRemoteMsg, len(cs))
@@ -43,7 +41,7 @@ type DefaultObject struct {
 // DefaultRemoteMsg DEFAULT
 type DefaultRemoteMsg struct {
 	c net.Conn
-	a servers.ANetAddr
+	a model.ANetAddr
 	r int
 }
 
