@@ -5,6 +5,7 @@ import (
 	"runtime"
 )
 
+// GetTestPath test path
 func GetTestPath() string {
 	_, filename, _, ok := runtime.Caller(1)
 	if !ok {
