@@ -10,6 +10,7 @@ import (
 
 	"github.com/Evi1/awsl/config"
 	"github.com/Evi1/awsl/model"
+	"github.com/Evi1/awsl/tools"
 	"golang.org/x/net/websocket"
 )
 
@@ -95,8 +96,13 @@ func (s *AWSL) Listen() net.Listener {
 
 // ReadRemote server
 func (s *AWSL) ReadRemote(c net.Conn) (model.ANetAddr, error) {
-	jsonBytes := make([]byte, 1024)
-	n, err := c.Read(jsonBytes)
+	buf := tools.MemPool.Get(65536)
+	defer func() {
+		tools.MemPool.Put(buf)
+	}()
+	n, jsonBytes, err := tools.Receive(c, buf)
+	//jsonBytes := make([]byte, 1024)
+	//n, err := c.Read(jsonBytes)
 	if err != nil {
 		return model.ANetAddr{}, err
 	}

@@ -39,22 +39,38 @@ func (s Socke5Server) Listen() net.Listener {
 
 // ReadRemote server
 func (s Socke5Server) ReadRemote(c net.Conn) (model.ANetAddr, error) {
-	n, d := tools.Receive(c)
+	buf := tools.MemPool.Get(65536)
+	defer func() {
+		tools.MemPool.Put(buf)
+	}()
+	n, d, err := tools.Receive(c, buf)
+	if err != nil {
+		return model.ANetAddr{}, err
+	}
 	if !bytes.Equal([]byte{d[0]}, []byte("\x05")) {
 		return model.ANetAddr{}, errors.New("not socks5: " + string(d[:n]))
 	}
 	//stage1 respons
 	d = []byte("\x05\x00")
-	_ = tools.Send(c, d)
+	_, err = c.Write(d)
+	if err != nil {
+		return model.ANetAddr{}, err
+	}
 	//stage2 receive
-	_, d = tools.Receive(c)
+	_, d, err = tools.Receive(c, buf)
+	if err != nil {
+		return model.ANetAddr{}, err
+	}
 	addr := model.ANetAddr{}
 	addr.Host, addr.Typ = getRemoteHost(d)
 	remotePort := getRemotePort(d)
 	addr.Port = remotePort
 	//stage2 respons
 	d = []byte("\x05\x00\x00\x01\x00\x00\x00\x00\xff\xff")
-	_ = tools.Send(c, d)
+	_, err = c.Write(d)
+	if err != nil {
+		return model.ANetAddr{}, err
+	}
 	return addr, nil
 }
 
@@ -95,6 +111,11 @@ func getRemoteHost(data []byte) (s string, t int) {
 }
 
 func getRemotePort(data []byte) (x int) {
+	defer func() {
+		if err := recover(); err != nil {
+			log.Printf("%+v\n", err)
+		}
+	}()
 	tt := data[len(data)-2:]
 	t := []byte{0x00, 0x00}
 	t = append(t, tt...)

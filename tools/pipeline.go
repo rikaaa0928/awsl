@@ -17,7 +17,10 @@ func SetReadTimeout(c net.Conn, readTimeout time.Duration) {
 // PipeThenClose pip
 func PipeThenClose(src, dst net.Conn) {
 	defer dst.Close()
-	buf := make([]byte, 40960)
+	buf := MemPool.Get(65536)
+	defer func() {
+		MemPool.Put(buf)
+	}()
 	SetReadTimeout(src, 60*time.Second)
 	for {
 		n, err := src.Read(buf)
