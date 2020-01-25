@@ -5,25 +5,30 @@ import (
 	"log"
 	"net"
 	"net/http"
+	"strconv"
 
+	"github.com/Evi1/awsl/config"
 	"github.com/Evi1/awsl/model"
 	"golang.org/x/net/websocket"
 )
 
 // NewAWSL NewAWSL
-func NewAWSL(listenHost, listenPort, uri, key, cert string) *AWSL {
-	return &AWSL{
+func NewAWSL(listenHost, listenPort, uri, key, cert string, cl int) *AWSL {
+	a := &AWSL{
 		IP:   listenHost,
 		Port: listenPort,
 		URI:  uri,
 		Listener: &AWSListener{
-			C:    make(chan net.Conn),
+			C:    make(chan net.Conn, cl),
 			IP:   listenHost,
 			Port: listenPort,
 		},
-		Cert: cert,
-		Key:  key,
+		Cert:    cert,
+		Key:     key,
+		ConnNum: make(chan int, 1),
 	}
+	a.ConnNum <- 0
+	return a
 }
 
 // AWSL AWSL
@@ -34,6 +39,8 @@ type AWSL struct {
 	Listener *AWSListener
 	Cert     string
 	Key      string
+	ConnNum  chan int
+	Max      int
 }
 
 func (s *AWSL) awslHandler(conn *websocket.Conn) {
@@ -42,7 +49,24 @@ func (s *AWSL) awslHandler(conn *websocket.Conn) {
 		C:    make(chan int),
 	}
 	s.Listener.C <- ac
+	if config.Debug {
+		num := <-s.ConnNum
+		num++
+		if num > s.Max {
+			s.Max = num
+			log.Println("max conn: " + strconv.Itoa(num))
+		}
+		s.ConnNum <- num
+	}
+
 	<-ac.C
+
+	if config.Debug {
+		num := <-s.ConnNum
+		num--
+		s.ConnNum <- num
+	}
+
 }
 
 // Listen server

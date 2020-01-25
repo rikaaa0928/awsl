@@ -5,6 +5,7 @@ type AwslIn struct {
 	Key  string
 	Cert string
 	URI  string
+	Chan int
 }
 
 // AwslOut awsl

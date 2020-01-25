@@ -7,7 +7,8 @@
             "awsl": {
                 "key": "",
                 "cert": "./test/server.crt",
-                "uri": "awsl"
+                "uri": "awsl",
+                "chan": 32
             }
         }
     ],

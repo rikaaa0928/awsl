@@ -18,8 +18,8 @@ func SetReadTimeout(c net.Conn, readTimeout time.Duration) {
 func PipeThenClose(src, dst net.Conn) {
 	defer dst.Close()
 	buf := make([]byte, 40960)
+	SetReadTimeout(src, 60*time.Second)
 	for {
-		SetReadTimeout(src, time.Duration(6)*time.Second)
 		n, err := src.Read(buf)
 		// read may return EOF with n > 0
 		// should always process n > 0 bytes before handling error
@@ -36,8 +36,8 @@ func PipeThenClose(src, dst net.Conn) {
 				break
 			}
 			et, ok := err.(net.Error)
-			if ok && et.Temporary() {
-				continue
+			if ok && et.Timeout() {
+				break
 			}
 			if err == io.EOF {
 				break

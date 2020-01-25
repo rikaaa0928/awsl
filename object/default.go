@@ -71,9 +71,13 @@ func (o *DefaultObject) handelOneClient(i int) {
 			c, err := o.C[i].Dial(m.a)
 			if err != nil {
 				log.Println(err)
-				return
+				continue
 			}
-			o.C[i].Verify(c)
+			err = o.C[i].Verify(c)
+			if err != nil {
+				log.Println(err)
+				continue
+			}
 			go tools.PipeThenClose(m.c, c)
 			go tools.PipeThenClose(c, m.c)
 		case <-o.Close:
@@ -86,19 +90,19 @@ func (o *DefaultObject) handelServer() {
 	var w sync.WaitGroup
 	for i := range o.S {
 		w.Add(1)
-		go o.handelOneServer(i)
+		go o.handelOneServer(i, &w)
 	}
 	w.Wait()
 }
 
-func (o *DefaultObject) handelOneServer(i int) {
+func (o *DefaultObject) handelOneServer(i int, w *sync.WaitGroup) {
 	log.Println("start server: " + strconv.Itoa(i))
 	l := o.S[i].Listen()
 	for !o.stop {
 		c, err := l.Accept()
 		if err != nil {
 			log.Println(err)
-			return
+			continue
 		}
 		go func() {
 			addr, e := o.S[i].ReadRemote(c)
@@ -113,4 +117,5 @@ func (o *DefaultObject) handelOneServer(i int) {
 			o.Msg[r] <- DefaultRemoteMsg{c: c, a: addr, r: r}
 		}()
 	}
+	w.Done()
 }

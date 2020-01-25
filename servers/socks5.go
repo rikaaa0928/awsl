@@ -59,6 +59,11 @@ func (s Socke5Server) ReadRemote(c net.Conn) (model.ANetAddr, error) {
 }
 
 func getRemoteHost(data []byte) (s string, t int) {
+	defer func() {
+		if err := recover(); err != nil {
+			log.Printf("%+v\n", err)
+		}
+	}()
 	if data[3] == byte(0x03) {
 		s = string(data[5 : len(data)-2])
 		t = 1
