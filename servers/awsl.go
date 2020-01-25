@@ -41,7 +41,6 @@ func (s *AWSL) awslHandler(conn *websocket.Conn) {
 		Conn: conn,
 		C:    make(chan int),
 	}
-	log.Println(conn.LocalAddr(), conn.RemoteAddr())
 	s.Listener.C <- ac
 	<-ac.C
 }

@@ -68,7 +68,6 @@ func (o *DefaultObject) handelOneClient(i int) {
 	for !o.stop {
 		select {
 		case m := <-o.Msg[i]:
-			log.Printf("%+v\n", m)
 			c, err := o.C[i].Dial(m.a)
 			if err != nil {
 				log.Println(err)

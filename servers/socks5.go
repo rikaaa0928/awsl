@@ -39,29 +39,22 @@ func (s Socke5Server) Listen() net.Listener {
 
 // ReadRemote server
 func (s Socke5Server) ReadRemote(c net.Conn) (model.ANetAddr, error) {
-	log.Printf("read")
 	n, d := tools.Receive(c)
-	log.Printf("read: %d : %#v\n", n, d[:n])
 	if !bytes.Equal([]byte{d[0]}, []byte("\x05")) {
-		return model.ANetAddr{}, errors.New("not socks5")
+		return model.ANetAddr{}, errors.New("not socks5: " + string(d[:n]))
 	}
 	//stage1 respons
 	d = []byte("\x05\x00")
-	n = tools.Send(c, d)
-	log.Printf("write:%#v:n="+strconv.Itoa(n)+"\n", d)
+	_ = tools.Send(c, d)
 	//stage2 receive
-	n, d = tools.Receive(c)
-	log.Printf("read: %d : %#v\n", n, d[:n])
+	_, d = tools.Receive(c)
 	addr := model.ANetAddr{}
 	addr.Host, addr.Typ = getRemoteHost(d)
 	remotePort := getRemotePort(d)
-	log.Println("rh=" + addr.Host)
-	log.Printf("rp=%v\n", remotePort)
 	addr.Port = remotePort
 	//stage2 respons
 	d = []byte("\x05\x00\x00\x01\x00\x00\x00\x00\xff\xff")
-	n = tools.Send(c, d)
-	log.Printf("write:%#v:n="+strconv.Itoa(n)+"\n", d)
+	_ = tools.Send(c, d)
 	return addr, nil
 }
 
