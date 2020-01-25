@@ -41,6 +41,7 @@ func (s *AWSL) awslHandler(conn *websocket.Conn) {
 		Conn: conn,
 		C:    make(chan int),
 	}
+	log.Println(conn.LocalAddr(), conn.RemoteAddr())
 	s.Listener.C <- ac
 	<-ac.C
 }
@@ -50,10 +51,18 @@ func (s *AWSL) Listen() net.Listener {
 	log.Println(s.IP+":"+s.Port, s.Cert, s.Key)
 	http.Handle("/"+s.URI, websocket.Handler(s.awslHandler))
 	go func() {
-		err := http.ListenAndServeTLS(s.IP+":"+s.Port, s.Cert, s.Key, nil)
-		if err != nil {
-			panic("ListenAndServe: " + err.Error())
+		if len(s.Cert) == 0 || len(s.Key) == 0 {
+			err := http.ListenAndServe(s.IP+":"+s.Port, nil)
+			if err != nil {
+				panic("ListenAndServe: " + err.Error())
+			}
+		} else {
+			err := http.ListenAndServeTLS(s.IP+":"+s.Port, s.Cert, s.Key, nil)
+			if err != nil {
+				panic("ListenAndServe: " + err.Error())
+			}
 		}
+
 	}()
 	return s.Listener
 }

@@ -3,9 +3,9 @@
         {
             "type": "awsl",
             "awsl": {
-                "host": "127.0.0.1",
-                "port": "1928",
-                "uri": "wss"
+                "host": "lo.bilibili.network",
+                "port": "1443",
+                "uri": "awsl"
             }
         }
     ],

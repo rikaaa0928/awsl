@@ -28,14 +28,14 @@ type AWSL struct {
 
 // Dial Dial
 func (c AWSL) Dial(addr model.ANetAddr) (net.Conn, error) {
-	config, err := websocket.NewConfig("wss://"+c.ServerHost+":"+c.ServerPort+"/"+c.URI, "wss://"+c.ServerHost+":"+c.ServerPort+"/"+c.URI)
+	config, err := websocket.NewConfig("wss://"+c.ServerHost+":"+c.ServerPort+"/"+c.URI, "https://"+c.ServerHost+":"+c.ServerPort+"/")
 	if err != nil {
 		log.Println("conf:" + err.Error())
 		return nil, err
 	}
 	config.TlsConfig = &tls.Config{
 		InsecureSkipVerify: true,
-		ServerName:         addr.Host,
+		ServerName:         c.ServerHost,
 	}
 	ws, err := websocket.DialConfig(config)
 	// ws, err := websocket.Dial(url, "", origin)

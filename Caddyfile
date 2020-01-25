@@ -1,0 +1,7 @@
+https://lo.bilibili.network:1443 {
+    tls self_signed
+    proxy /awsl http://127.0.0.1:1928 {
+        transparent
+        websocket
+    }
+}

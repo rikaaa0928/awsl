@@ -5,9 +5,9 @@
             "port": "1928",
             "type": "awsl",
             "awsl": {
-                "key": "./test/server.key",
+                "key": "",
                 "cert": "./test/server.crt",
-                "uri": "wss"
+                "uri": "awsl"
             }
         }
     ],
