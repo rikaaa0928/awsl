@@ -12,7 +12,7 @@ import "github.com/Evi1/awsl/model"
 var Conf model.Object
 
 func init() {
-	configFile := flag.String("c", "config.json", "path to config file")
+	configFile := flag.String("c", "/etc/awsl/config.json", "path to config file")
 	flag.Parse()
 	confBytes, err := ioutil.ReadFile(*configFile)
 	if err != nil {
