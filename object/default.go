@@ -13,6 +13,7 @@ import (
 	"github.com/Evi1/awsl/tools"
 )
 
+// NewDefault NewDefault
 func NewDefault(cs []clients.Client, ss []servers.Server) *DefaultObject {
 	m := make([]chan DefaultRemoteMsg, len(cs))
 	for i := range m {
@@ -92,7 +93,7 @@ func (o *DefaultObject) handelServer() {
 }
 
 func (o *DefaultObject) handelOneServer(i int) {
-	log.Println("server: " + strconv.Itoa(i))
+	log.Println("start server: " + strconv.Itoa(i))
 	l := o.S[i].Listen()
 	for !o.stop {
 		c, err := l.Accept()

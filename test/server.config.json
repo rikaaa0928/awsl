@@ -1,0 +1,19 @@
+{
+    "ins": [
+        {
+            "host": "127.0.0.1",
+            "port": "1928",
+            "type": "awsl",
+            "awsl": {
+                "key": "./test/server.key",
+                "cert": "./test/server.crt",
+                "uri": "wss"
+            }
+        }
+    ],
+    "outs": [
+        {
+            "type": "direct"
+        }
+    ]
+}

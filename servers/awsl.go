@@ -2,6 +2,7 @@ package servers
 
 import (
 	"encoding/json"
+	"log"
 	"net"
 	"net/http"
 
@@ -46,6 +47,7 @@ func (s *AWSL) awslHandler(conn *websocket.Conn) {
 
 // Listen server
 func (s *AWSL) Listen() net.Listener {
+	log.Println(s.IP+":"+s.Port, s.Cert, s.Key)
 	http.Handle("/"+s.URI, websocket.Handler(s.awslHandler))
 	go func() {
 		err := http.ListenAndServeTLS(s.IP+":"+s.Port, s.Cert, s.Key, nil)
