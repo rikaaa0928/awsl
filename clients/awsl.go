@@ -11,11 +11,12 @@ import (
 )
 
 // NewAWSL NewAWSL
-func NewAWSL(serverHost, serverPort, uri string) AWSL {
+func NewAWSL(serverHost, serverPort, uri, auth string) AWSL {
 	return AWSL{
 		ServerHost: serverHost,
 		ServerPort: serverPort,
 		URI:        uri,
+		Auth:       auth,
 	}
 }
 
@@ -24,6 +25,7 @@ type AWSL struct {
 	ServerHost string
 	ServerPort string
 	URI        string
+	Auth       string
 }
 
 // Dial Dial
@@ -50,9 +52,10 @@ func (c AWSL) Dial(addr model.ANetAddr) (net.Conn, error) {
 // Verify Verify
 func (c AWSL) Verify(conn net.Conn) error {
 	ws := conn.(awslConn)
-	addrBytes, err := json.Marshal(ws.Addr)
+	auth := model.AddrWithAuth{ANetAddr: ws.Addr, Auth: c.Auth}
+	addrBytes, err := json.Marshal(auth)
 	if err != nil {
-		log.Println("json marshal:" + err.Error())
+		log.Println("json marshal : " + err.Error())
 		return err
 	}
 	_, err = ws.Write(addrBytes)

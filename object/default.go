@@ -105,8 +105,8 @@ func (o *DefaultObject) handelOneServer(i int, w *sync.WaitGroup) {
 			continue
 		}
 		go func() {
-			addr, e := o.S[i].ReadRemote(c)
-			if e != nil {
+			addr, err := o.S[i].ReadRemote(c)
+			if err != nil {
 				log.Println(err)
 				return
 			}

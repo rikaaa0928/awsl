@@ -5,6 +5,7 @@ type AwslIn struct {
 	Key  string
 	Cert string
 	URI  string
+	Auth string
 	Chan int
 }
 
@@ -13,6 +14,7 @@ type AwslOut struct {
 	Host string
 	Port string
 	URI  string
+	Auth string
 }
 
 // In in

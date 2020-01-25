@@ -2,6 +2,7 @@ package servers
 
 import (
 	"encoding/json"
+	"errors"
 	"log"
 	"net"
 	"net/http"
@@ -13,11 +14,12 @@ import (
 )
 
 // NewAWSL NewAWSL
-func NewAWSL(listenHost, listenPort, uri, key, cert string, cl int) *AWSL {
+func NewAWSL(listenHost, listenPort, uri, auth, key, cert string, cl int) *AWSL {
 	a := &AWSL{
 		IP:   listenHost,
 		Port: listenPort,
 		URI:  uri,
+		Auth: auth,
 		Listener: &AWSListener{
 			C:    make(chan net.Conn, cl),
 			IP:   listenHost,
@@ -36,6 +38,7 @@ type AWSL struct {
 	IP       string
 	Port     string
 	URI      string
+	Auth     string
 	Listener *AWSListener
 	Cert     string
 	Key      string
@@ -97,9 +100,15 @@ func (s *AWSL) ReadRemote(c net.Conn) (model.ANetAddr, error) {
 	if err != nil {
 		return model.ANetAddr{}, err
 	}
-	addr := model.ANetAddr{}
-	err = json.Unmarshal(jsonBytes[:n], &addr)
-	return addr, err
+	a := model.AddrWithAuth{}
+	err = json.Unmarshal(jsonBytes[:n], &a)
+	if err != nil {
+		return model.ANetAddr{}, err
+	}
+	if a.Auth != s.Auth {
+		return model.ANetAddr{}, errors.New("Authentication failed : " + string(jsonBytes[:n]))
+	}
+	return a.ANetAddr, nil
 }
 
 // AWSListener listener

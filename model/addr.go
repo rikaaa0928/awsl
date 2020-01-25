@@ -6,3 +6,9 @@ type ANetAddr struct {
 	Host string
 	Port int
 }
+
+// AddrWithAuth addr
+type AddrWithAuth struct {
+	ANetAddr
+	Auth string
+}
