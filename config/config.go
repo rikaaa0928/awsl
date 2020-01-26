@@ -32,4 +32,7 @@ func init() {
 	if Conf.BufSize == 0 {
 		Conf.BufSize = 32
 	}
+	if Debug {
+		Conf.NoVerify = true
+	}
 }

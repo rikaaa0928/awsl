@@ -39,7 +39,8 @@ type Out struct {
 
 // Object object
 type Object struct {
-	Ins     []In
-	Outs    []Out
-	BufSize int
+	Ins      []In
+	Outs     []Out
+	BufSize  int
+	NoVerify bool
 }

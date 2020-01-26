@@ -6,6 +6,7 @@ import (
 	"log"
 	"net"
 
+	"github.com/Evi1/awsl/config"
 	"github.com/Evi1/awsl/model"
 	"golang.org/x/net/websocket"
 )
@@ -30,16 +31,16 @@ type AWSL struct {
 
 // Dial Dial
 func (c AWSL) Dial(addr model.ANetAddr) (net.Conn, error) {
-	config, err := websocket.NewConfig("wss://"+c.ServerHost+":"+c.ServerPort+"/"+c.URI, "https://"+c.ServerHost+":"+c.ServerPort+"/")
+	wsConfig, err := websocket.NewConfig("wss://"+c.ServerHost+":"+c.ServerPort+"/"+c.URI, "https://"+c.ServerHost+":"+c.ServerPort+"/")
 	if err != nil {
 		log.Println("conf:" + err.Error())
 		return nil, err
 	}
-	config.TlsConfig = &tls.Config{
-		InsecureSkipVerify: true,
+	wsConfig.TlsConfig = &tls.Config{
+		InsecureSkipVerify: config.Conf.NoVerify,
 		ServerName:         c.ServerHost,
 	}
-	ws, err := websocket.DialConfig(config)
+	ws, err := websocket.DialConfig(wsConfig)
 	// ws, err := websocket.Dial(url, "", origin)
 	if err != nil {
 		log.Println("dial:" + err.Error())
