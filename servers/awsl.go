@@ -15,16 +15,16 @@ import (
 )
 
 // NewAWSL NewAWSL
-func NewAWSL(listenHost, listenPort, uri, auth, key, cert string, cl int) *AWSL {
+func NewAWSL(listenHost, listenPort, uri, auth, key, cert string, connsSize int) *AWSL {
 	a := &AWSL{
 		IP:   listenHost,
 		Port: listenPort,
 		URI:  uri,
 		Auth: auth,
 		Listener: &AWSListener{
-			C:    make(chan net.Conn, cl),
-			IP:   listenHost,
-			Port: listenPort,
+			Conns: make(chan net.Conn, connsSize),
+			IP:    listenHost,
+			Port:  listenPort,
 		},
 		Cert:    cert,
 		Key:     key,
@@ -50,9 +50,9 @@ type AWSL struct {
 func (s *AWSL) awslHandler(conn *websocket.Conn) {
 	ac := &awslConn{
 		Conn: conn,
-		C:    make(chan int),
+		CloseChan:    make(chan int8),
 	}
-	s.Listener.C <- ac
+	s.Listener.Conns <- ac
 	if config.Debug {
 		num := <-s.ConnNum
 		num++
@@ -63,7 +63,7 @@ func (s *AWSL) awslHandler(conn *websocket.Conn) {
 		s.ConnNum <- num
 	}
 
-	<-ac.C
+	<-ac.CloseChan
 
 	if config.Debug {
 		num := <-s.ConnNum
@@ -119,14 +119,14 @@ func (s *AWSL) ReadRemote(c net.Conn) (model.ANetAddr, error) {
 
 // AWSListener listener
 type AWSListener struct {
-	C    chan net.Conn
-	IP   string
-	Port string
+	Conns chan net.Conn
+	IP    string
+	Port  string
 }
 
 // Accept Accept
 func (l *AWSListener) Accept() (net.Conn, error) {
-	c := <-l.C
+	c := <-l.Conns
 	return c, nil
 }
 
@@ -145,11 +145,11 @@ func (l AWSListener) Addr() net.Addr {
 
 type awslConn struct {
 	*websocket.Conn
-	C chan int
+	CloseChan chan int8
 }
 
 func (c *awslConn) Close() error {
 	err := c.Conn.Close()
-	c.C <- 1
+	c.CloseChan <- 1
 	return err
 }

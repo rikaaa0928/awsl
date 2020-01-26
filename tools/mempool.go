@@ -2,6 +2,8 @@ package tools
 
 import "sync"
 
+import "github.com/Evi1/awsl/config"
+
 // MemPool MemPool
 var MemPool *MPool
 
@@ -28,7 +30,7 @@ func (m *MPool) Get(size int) []byte {
 		m.l.Lock()
 		c, ok = m.Pool[size]
 		if !ok {
-			m.Pool[size] = make(chan []byte, 32)
+			m.Pool[size] = make(chan []byte, config.Conf.BufSize)
 			c = m.Pool[size]
 		}
 		m.l.Unlock()

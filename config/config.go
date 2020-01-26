@@ -8,6 +8,8 @@ import "encoding/json"
 
 import "github.com/Evi1/awsl/model"
 
+import "path/filepath"
+
 // Conf conf
 var Conf model.Object
 
@@ -19,12 +21,15 @@ func init() {
 	debug := flag.Bool("d", false, "debug")
 	flag.Parse()
 	Debug = *debug
-	confBytes, err := ioutil.ReadFile(*configFile)
+	confBytes, err := ioutil.ReadFile(filepath.FromSlash(*configFile))
 	if err != nil {
 		panic(err)
 	}
 	err = json.Unmarshal(confBytes, &Conf)
 	if err != nil {
 		panic(err)
+	}
+	if Conf.BufSize == 0 {
+		Conf.BufSize = 32
 	}
 }

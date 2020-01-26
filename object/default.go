@@ -7,6 +7,7 @@ import (
 	"sync"
 
 	"github.com/Evi1/awsl/clients"
+	"github.com/Evi1/awsl/config"
 	"github.com/Evi1/awsl/model"
 	"github.com/Evi1/awsl/router"
 	"github.com/Evi1/awsl/servers"
@@ -17,7 +18,7 @@ import (
 func NewDefault(cs []clients.Client, ss []servers.Server) *DefaultObject {
 	m := make([]chan DefaultRemoteMsg, len(cs))
 	for i := range m {
-		m[i] = make(chan DefaultRemoteMsg, 10)
+		m[i] = make(chan DefaultRemoteMsg, config.Conf.BufSize)
 	}
 	return &DefaultObject{
 		C:     cs,
@@ -48,7 +49,7 @@ type DefaultRemoteMsg struct {
 
 // Run object
 func (o *DefaultObject) Run() {
-	go o.handelClient()
+	o.handelClient()
 	o.handelServer()
 }
 
@@ -60,7 +61,7 @@ func (o *DefaultObject) Stop() {
 
 func (o *DefaultObject) handelClient() {
 	for i := range o.C {
-		o.handelOneClient(i)
+		go o.handelOneClient(i)
 	}
 }
 

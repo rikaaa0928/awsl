@@ -33,6 +33,7 @@ type Out struct {
 
 // Object object
 type Object struct {
-	Ins  []In
-	Outs []Out
+	Ins     []In
+	Outs    []Out
+	BufSize int
 }

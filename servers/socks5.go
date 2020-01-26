@@ -43,25 +43,25 @@ func (s Socke5Server) ReadRemote(c net.Conn) (model.ANetAddr, error) {
 	defer func() {
 		tools.MemPool.Put(buf)
 	}()
+	addr := model.ANetAddr{}
 	n, d, err := tools.Receive(c, buf)
 	if err != nil {
-		return model.ANetAddr{}, err
+		return addr, err
 	}
 	if !bytes.Equal([]byte{d[0]}, []byte("\x05")) {
-		return model.ANetAddr{}, errors.New("not socks5: " + string(d[:n]))
+		return addr, errors.New("not socks5: " + string(d[:n]))
 	}
 	//stage1 respons
 	d = []byte("\x05\x00")
 	_, err = c.Write(d)
 	if err != nil {
-		return model.ANetAddr{}, err
+		return addr, err
 	}
 	//stage2 receive
 	_, d, err = tools.Receive(c, buf)
 	if err != nil {
-		return model.ANetAddr{}, err
+		return addr, err
 	}
-	addr := model.ANetAddr{}
 	addr.Host, addr.Typ = getRemoteHost(d)
 	remotePort := getRemotePort(d)
 	addr.Port = remotePort
@@ -69,7 +69,7 @@ func (s Socke5Server) ReadRemote(c net.Conn) (model.ANetAddr, error) {
 	d = []byte("\x05\x00\x00\x01\x00\x00\x00\x00\xff\xff")
 	_, err = c.Write(d)
 	if err != nil {
-		return model.ANetAddr{}, err
+		return addr, err
 	}
 	return addr, nil
 }
@@ -82,11 +82,11 @@ func getRemoteHost(data []byte) (s string, t int) {
 	}()
 	if data[3] == byte(0x03) {
 		s = string(data[5 : len(data)-2])
-		t = 1
+		t = model.RAWADDR
 		return
 	}
 	if data[3] == byte(0x01) {
-		t = 4
+		t = model.IPV4ADDR
 		for i := 0; i < len(data)-6; i++ {
 			t := data[4+i]
 			x := int(t)
@@ -97,7 +97,7 @@ func getRemoteHost(data []byte) (s string, t int) {
 		}
 		return
 	}
-	t = 6
+	t = model.IPV6ADDR
 	s += "["
 	for i := 0; i < len(data)-7; i += 2 {
 		s += strconv.FormatInt(int64(data[4+i]), 16)

@@ -37,10 +37,7 @@ func PipeThenClose(src, dst net.Conn) {
 		}
 		if err != nil {
 			e, ok := err.(*net.OpError)
-			if ok && !e.Temporary() {
-				if config.Debug {
-					log.Println("pip read: " + err.Error())
-				}
+			if ok && !e.Temporary() && !config.Debug {
 				break
 			}
 			et, ok := err.(net.Error)
