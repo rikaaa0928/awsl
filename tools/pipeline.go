@@ -2,11 +2,8 @@ package tools
 
 import (
 	"io"
-	"log"
 	"net"
 	"time"
-
-	"github.com/Evi1/awsl/config"
 )
 
 // SetReadTimeout set
@@ -19,11 +16,12 @@ func SetReadTimeout(c net.Conn, readTimeout time.Duration) {
 // PipeThenClose pip
 func PipeThenClose(src, dst net.Conn) {
 	defer dst.Close()
+	defer src.Close()
 	buf := MemPool.Get(65536)
-	defer func() {
-		MemPool.Put(buf)
-	}()
-	for {
+	defer MemPool.Put(buf)
+
+	io.CopyBuffer(dst, src, buf)
+	/*for {
 		SetReadTimeout(src, 3*time.Second)
 		n, err := src.Read(buf)
 		// read may return EOF with n > 0
@@ -50,5 +48,5 @@ func PipeThenClose(src, dst net.Conn) {
 			log.Println("pip read: " + err.Error())
 			break
 		}
-	}
+	}*/
 }

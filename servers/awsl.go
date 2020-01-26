@@ -49,8 +49,8 @@ type AWSL struct {
 
 func (s *AWSL) awslHandler(conn *websocket.Conn) {
 	ac := &awslConn{
-		Conn: conn,
-		CloseChan:    make(chan int8),
+		Conn:      conn,
+		CloseChan: make(chan int8),
 	}
 	s.Listener.Conns <- ac
 	if config.Debug {
@@ -68,6 +68,9 @@ func (s *AWSL) awslHandler(conn *websocket.Conn) {
 	if config.Debug {
 		num := <-s.ConnNum
 		num--
+		if num == 0 {
+			log.Println("Connection clear")
+		}
 		s.ConnNum <- num
 	}
 
@@ -97,9 +100,7 @@ func (s *AWSL) Listen() net.Listener {
 // ReadRemote server
 func (s *AWSL) ReadRemote(c net.Conn) (model.ANetAddr, error) {
 	buf := tools.MemPool.Get(65536)
-	defer func() {
-		tools.MemPool.Put(buf)
-	}()
+	defer tools.MemPool.Put(buf)
 	n, jsonBytes, err := tools.Receive(c, buf)
 	//jsonBytes := make([]byte, 1024)
 	//n, err := c.Read(jsonBytes)
@@ -144,7 +145,7 @@ func (l AWSListener) Addr() net.Addr {
 }
 
 type awslConn struct {
-	*websocket.Conn
+	net.Conn
 	CloseChan chan int8
 }
 

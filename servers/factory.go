@@ -11,6 +11,8 @@ func NewServers(conf []model.In) []Server {
 			r = append(r, Socke5Server{IP: v.Host, Port: v.Port})
 		case "awsl":
 			r = append(r, NewAWSL(v.Host, v.Port, v.Awsl.URI, v.Awsl.Auth, v.Awsl.Key, v.Awsl.Cert, v.Awsl.Chan))
+		case "http":
+			r = append(r, NewHTTP(v.Host, v.Port, v.HTTP.Chan))
 		default:
 			panic(v.Type)
 		}

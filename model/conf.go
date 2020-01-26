@@ -1,5 +1,10 @@
 package model
 
+// HTTPIn HttpIn
+type HTTPIn struct {
+	Chan int
+}
+
 // AwslIn awsl
 type AwslIn struct {
 	Key  string
@@ -22,6 +27,7 @@ type In struct {
 	Host string
 	Port string
 	Awsl *AwslIn
+	HTTP *HTTPIn
 	Type string
 }
 
