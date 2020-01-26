@@ -5,6 +5,8 @@ import (
 	"log"
 	"net"
 	"time"
+
+	"github.com/Evi1/awsl/config"
 )
 
 // SetReadTimeout set
@@ -21,8 +23,8 @@ func PipeThenClose(src, dst net.Conn) {
 	defer func() {
 		MemPool.Put(buf)
 	}()
-	SetReadTimeout(src, 60*time.Second)
 	for {
+		SetReadTimeout(src, 3*time.Second)
 		n, err := src.Read(buf)
 		// read may return EOF with n > 0
 		// should always process n > 0 bytes before handling error
@@ -36,6 +38,9 @@ func PipeThenClose(src, dst net.Conn) {
 		if err != nil {
 			e, ok := err.(*net.OpError)
 			if ok && !e.Temporary() {
+				if config.Debug {
+					log.Println("pip read: " + err.Error())
+				}
 				break
 			}
 			et, ok := err.(net.Error)

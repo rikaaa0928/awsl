@@ -68,18 +68,20 @@ func (o *DefaultObject) handelOneClient(i int) {
 	for !o.stop {
 		select {
 		case m := <-o.Msg[i]:
-			c, err := o.C[i].Dial(m.a)
-			if err != nil {
-				log.Println(err)
-				continue
-			}
-			err = o.C[i].Verify(c)
-			if err != nil {
-				log.Println(err)
-				continue
-			}
-			go tools.PipeThenClose(m.c, c)
-			go tools.PipeThenClose(c, m.c)
+			go func() {
+				c, err := o.C[i].Dial(m.a)
+				if err != nil {
+					log.Println(err)
+					return
+				}
+				err = o.C[i].Verify(c)
+				if err != nil {
+					log.Println(err)
+					return
+				}
+				go tools.PipeThenClose(m.c, c)
+				tools.PipeThenClose(c, m.c)
+			}()
 		case <-o.Close:
 			o.stop = true
 		}
