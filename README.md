@@ -19,15 +19,15 @@ windows10可使用wsl
 1. 创建wsl_run.sh
 ```
 #!/bin/bash
-# sudo service privoxy start >/dev/null 2>&1    # 可使用privoxy完成http -> socks5
+# service privoxy start >/dev/null 2>&1    # 可使用privoxy完成http -> socks5
 $GOPATH/bin/awsl > $logfile 2>&1
 ```
 2. `chmod +x wsl_run.sh`
-3. 使用privoxy的话 `sudo visudo`  
-添加  `$username ALL=(root) NOPASSWD: /etc/init.d/privoxy`
+3. `sudo visudo`  
+添加  `$username ALL=(root) NOPASSWD: $path_to_wsl_run`
 4. windows中新建`wsl.vbs`
 ```
 Set ws = CreateObject("Wscript.Shell") 
-ws.run "wsl -d Ubuntu-18.04 -e $path_to_wsl_run.sh", vbhide
+ws.run "wsl -d Ubuntu-18.04 -e sudo $path_to_wsl_run.sh", vbhide
 ```
 5. 使用任务计划程序添加vbs
