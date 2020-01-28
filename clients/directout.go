@@ -11,7 +11,11 @@ type DirectOut struct{}
 
 // Dial Dial
 func (c DirectOut) Dial(addr model.ANetAddr) (net.Conn, error) {
-	return net.Dial("tcp", addr.Host+":"+strconv.Itoa(addr.Port))
+	network := "tcp"
+	if addr.CMD == model.UDP {
+		network = "udp"
+	}
+	return net.Dial(network, addr.Host+":"+strconv.Itoa(addr.Port))
 }
 
 // Verify Verify
