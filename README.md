@@ -13,7 +13,7 @@ windows10可使用wsl
 6. 运行`$GOPATH/bin/awsl -c $configfile`
 
 没有`-c $configfile`时读取/etc/awsl/config.json
-配置文件参考`test/server.config.json`和`test/client.config.json`
+配置文件参考`test/server.config.json`和`test/client.config.json` 以及`Caddfile`，配合caddy使用时server端不需要key和crt
 
 ## WSL解决方案
 1. 创建wsl_run.sh
