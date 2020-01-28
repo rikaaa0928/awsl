@@ -24,10 +24,11 @@ $GOPATH/bin/awsl > $logfile 2>&1
 ```
 2. `chmod +x wsl_run.sh`
 3. `sudo visudo`  
-添加  `$username ALL=(root) NOPASSWD: $path_to_wsl_run`
-4. windows中新建`wsl.vbs`
+添加  `$username ALL=(root) NOPASSWD: $path_to_wsl_run.sh`
+4. windows中新建`wsl.vbs`  
+`$wsl_name` 可在cmd中使用 `wsl -l`查看
 ```
 Set ws = CreateObject("Wscript.Shell") 
-ws.run "wsl -d Ubuntu-18.04 -e sudo $path_to_wsl_run.sh", vbhide
+ws.run "wsl -d $wsl_name -e sudo $path_to_wsl_run.sh", vbhide
 ```
 5. 使用任务计划程序添加vbs
