@@ -18,7 +18,7 @@ import (
 func NewDefault(cs []clients.Client, ss []servers.Server) *DefaultObject {
 	m := make([]chan DefaultRemoteMsg, len(cs))
 	for i := range m {
-		m[i] = make(chan DefaultRemoteMsg, config.Conf.BufSize)
+		m[i] = make(chan DefaultRemoteMsg, config.GetConf().BufSize)
 	}
 	return &DefaultObject{
 		C:     cs,
@@ -78,6 +78,7 @@ func (o *DefaultObject) handelOneClient(i int) {
 				err = o.C[i].Verify(c)
 				if err != nil {
 					log.Println(err)
+					c.Close()
 					return
 				}
 				go tools.PipeThenClose(m.c, c)
@@ -105,12 +106,16 @@ func (o *DefaultObject) handelOneServer(i int, w *sync.WaitGroup) {
 		c, err := l.Accept()
 		if err != nil {
 			log.Println(err)
+			if c != nil {
+				c.Close()
+			}
 			continue
 		}
 		go func() {
 			addr, err := o.S[i].ReadRemote(c)
 			if err != nil {
 				log.Println(err)
+				c.Close()
 				return
 			}
 			r := o.R.Route(addr)

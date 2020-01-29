@@ -16,3 +16,4 @@
 # vendor/
 awsl
 caddy
+*config.json

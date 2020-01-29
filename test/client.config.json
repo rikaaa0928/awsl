@@ -12,7 +12,7 @@
     ],
     "ins": [
         {
-            "type": "socks5",
+            "type": "socks",
             "host": "127.0.0.1",
             "port": "48888"
         }

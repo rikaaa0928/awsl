@@ -1,8 +1,9 @@
 package tools
 
-import "sync"
-
-import "github.com/Evi1/awsl/config"
+import (
+	"github.com/Evi1/awsl/config"
+	"sync"
+)
 
 // MemPool MemPool
 var MemPool *MPool
@@ -30,7 +31,7 @@ func (m *MPool) Get(size int) []byte {
 		m.l.Lock()
 		c, ok = m.Pool[size]
 		if !ok {
-			m.Pool[size] = make(chan []byte, config.Conf.BufSize)
+			m.Pool[size] = make(chan []byte, config.GetConf().BufSize)
 			c = m.Pool[size]
 		}
 		m.l.Unlock()
@@ -56,5 +57,4 @@ func (m *MPool) Put(bytes []byte) {
 	default:
 		return
 	}
-
 }

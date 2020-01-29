@@ -7,6 +7,10 @@ func NewServers(conf []model.In) []Server {
 	r := make([]Server, 0, len(conf))
 	for _, v := range conf {
 		switch v.Type {
+		case "socks":
+			r = append(r, SockeServer{IP: v.Host, Port: v.Port})
+		case "socks5tcp":
+			r = append(r, Socke5TCPServer{IP: v.Host, Port: v.Port})
 		case "socks5":
 			r = append(r, Socke5Server{IP: v.Host, Port: v.Port})
 		case "awsl":

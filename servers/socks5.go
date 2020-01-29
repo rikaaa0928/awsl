@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"encoding/binary"
 	"errors"
-	"fmt"
 	"log"
 	"net"
 	"strconv"
@@ -34,94 +33,163 @@ func (s Socke5Server) Listen() net.Listener {
 	if e != nil {
 		panic(e)
 	}
-	return l
+	sl := socks5Listenner{Listener: l, listenIP: s.IP}
+	return sl
 }
 
 // ReadRemote server
 func (s Socke5Server) ReadRemote(c net.Conn) (model.ANetAddr, error) {
-	buf := tools.MemPool.Get(65536)
-	defer func() {
-		tools.MemPool.Put(buf)
-	}()
-	addr := model.ANetAddr{}
-	n, d, err := tools.Receive(c, buf)
-	if err != nil {
-		return addr, err
+	sc, ok := c.(socksConn)
+	if !ok {
+		uc, ok := c.(udpConn)
+		if !ok {
+			return model.ANetAddr{}, errors.New("invalid connection type")
+		}
+		return uc.remoteAddr, nil
 	}
-	if !bytes.Equal([]byte{d[0]}, []byte("\x05")) {
-		return addr, errors.New("not socks5: " + string(d[:n]))
-	}
-	//stage1 respons
-	d = []byte("\x05\x00")
-	_, err = c.Write(d)
-	if err != nil {
-		return addr, err
-	}
-	//stage2 receive
-	_, d, err = tools.Receive(c, buf)
-	if err != nil {
-		return addr, err
-	}
-	addr.Host, addr.Typ = getRemoteHost(d)
-	remotePort := getRemotePort(d)
-	addr.Port = remotePort
-	//stage2 respons
-	d = []byte("\x05\x00\x00\x01\x00\x00\x00\x00\xff\xff")
-	_, err = c.Write(d)
-	if err != nil {
-		return addr, err
-	}
-	return addr, nil
+	return sc.remoteAddr, nil
 }
 
-func getRemoteHost(data []byte) (s string, t int) {
-	defer func() {
-		if err := recover(); err != nil {
-			log.Printf("%+v\n", err)
-		}
-	}()
-	if data[3] == byte(0x03) {
-		s = string(data[5 : len(data)-2])
-		t = model.RAWADDR
-		return
+type socks5Listenner struct {
+	net.Listener
+	listenIP string
+}
+
+func (l socks5Listenner) Accept() (net.Conn, error) {
+	conn, err := l.Listener.Accept()
+	if err != nil {
+		return conn, err
 	}
-	if data[3] == byte(0x01) {
-		t = model.IPV4ADDR
-		for i := 0; i < len(data)-6; i++ {
-			t := data[4+i]
-			x := int(t)
-			s += strconv.Itoa(x)
-			if i != len(data)-7 {
-				s += "."
+	buf := tools.MemPool.Get(65536)
+	defer tools.MemPool.Put(buf)
+	n, err := conn.Read(buf)
+	if err != nil {
+		return conn, err
+	}
+	if n < 1 {
+		return conn, errors.New("invalid length")
+	}
+	if buf[0] != 5 {
+		return conn, errors.New("unsuported type")
+	}
+	_, err = conn.Write([]byte("\x05\x00"))
+	if err != nil {
+		return conn, err
+	}
+
+	// stage2
+	return socks5Stage2(conn, buf, l.listenIP)
+}
+
+func socks5Stage2(conn net.Conn, buf []byte, listenIP string) (net.Conn, error) {
+	addr := model.ANetAddr{}
+	n, err := conn.Read(buf)
+	if err != nil {
+		return conn, err
+	}
+	if n < 2 {
+		return conn, errors.New("invalid length")
+	}
+	addr.Host, addr.Typ = getRemoteHost5(buf[:n])
+	remotePort := getRemotePort5(buf[:n])
+	addr.Port = remotePort
+
+	switch buf[1] {
+	case 1:
+		sc := socksConn{}
+		addr.CMD = model.TCP
+		sc.remoteAddr = addr
+		sc.Conn = conn
+		_, err = conn.Write([]byte("\x05\x00\x00\x01\x00\x00\x00\x00\xff\xff"))
+		if err != nil {
+			return sc, err
+		}
+		return sc, nil
+	case 3:
+		uc := &udpConn{}
+		uc.ip = listenIP
+		addr.CMD = model.UDP
+		uc.remoteAddr = addr
+		lp, err := uc.HandleUDP(conn)
+		if err != nil {
+			return *uc, err
+		}
+		d := []byte("\x05\x00\x00\x01\x00\x00\x00\x00\xff\xff")
+		copy(d[4:8], []byte(net.ParseIP(listenIP).To4()))
+		bufer := new(bytes.Buffer)
+		err = binary.Write(bufer, binary.LittleEndian, lp)
+		if err != nil {
+			return *uc, err
+		}
+		copy(d[8:], bufer.Bytes())
+		_, err = conn.Write(d)
+		if err != nil {
+			return *uc, err
+		}
+		return *uc, nil
+	default:
+		return conn, errors.New("unsuported or invalid cmd : " + strconv.Itoa(int(buf[1])))
+	}
+}
+
+type socksConn struct {
+	net.Conn
+	remoteAddr model.ANetAddr
+}
+
+type udpConn struct {
+	socksConn
+	tcpCon      net.Conn
+	ip          string
+	udpListener net.Listener
+}
+
+func (c *udpConn) HandleUDP(conn net.Conn) (int, error) {
+	listened := false
+	c.tcpCon = conn
+	var err error
+	p := 65536
+	for !listened && p > 1 {
+		p--
+		c.udpListener, err = net.Listen("udp", c.ip+":"+strconv.Itoa(p))
+		if err != nil {
+			continue
+		}
+		conn, err := c.udpListener.Accept()
+		if err != nil {
+			return p, err
+		}
+		c.Conn = conn
+		listened = true
+	}
+	if !listened {
+		return p, errors.New("failed to find udp listenning port")
+	}
+	go func() {
+		buf := tools.MemPool.Get(65535)
+		defer tools.MemPool.Put(buf)
+		for {
+			_, err := conn.Read(buf)
+			if err != nil {
+				nerr, ok := err.(net.Error)
+				if ok && nerr.Timeout() {
+					continue
+				}
+				break
 			}
 		}
-		return
-	}
-	t = model.IPV6ADDR
-	s += "["
-	for i := 0; i < len(data)-7; i += 2 {
-		s += strconv.FormatInt(int64(data[4+i]), 16)
-		s += fmt.Sprintf("%02x", int(data[5+i]))
-		if i != len(data)-8 {
-			s += ":"
-		}
-	}
-	s += "]"
-	return
+		c.udpListener.Close()
+		c.Conn.Close()
+	}()
+	return p, nil
 }
 
-func getRemotePort(data []byte) (x int) {
-	defer func() {
-		if err := recover(); err != nil {
-			log.Printf("%+v\n", err)
-		}
-	}()
-	tt := data[len(data)-2:]
-	t := []byte{0x00, 0x00}
-	t = append(t, tt...)
-	tb := bytes.NewBuffer(t)
-	var y int32
-	binary.Read(tb, binary.BigEndian, &y)
-	x = int(y)
-	return
+func (c udpConn) Close() error {
+	if c.tcpCon != nil {
+		c.tcpCon.Close()
+	}
+	if c.udpListener != nil {
+		c.udpListener.Close()
+	}
+	return c.Conn.Close()
 }

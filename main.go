@@ -6,6 +6,6 @@ import (
 )
 
 func main() {
-	o := object.NewObject(config.Conf)
+	o := object.NewObject(config.GetConf())
 	o.Run()
 }

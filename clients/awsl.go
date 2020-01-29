@@ -37,7 +37,7 @@ func (c AWSL) Dial(addr model.ANetAddr) (net.Conn, error) {
 		return nil, err
 	}
 	wsConfig.TlsConfig = &tls.Config{
-		InsecureSkipVerify: config.Conf.NoVerify,
+		InsecureSkipVerify: config.GetConf().NoVerify,
 		ServerName:         c.ServerHost,
 	}
 	ws, err := websocket.DialConfig(wsConfig)

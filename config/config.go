@@ -10,13 +10,15 @@ import "github.com/Evi1/awsl/model"
 
 import "path/filepath"
 
-// Conf conf
-var Conf model.Object
+import "sync"
+
+var conf *model.Object
+var lock sync.Mutex
 
 // Debug debug
 var Debug bool
 
-func init() {
+func initConf() {
 	configFile := flag.String("c", "/etc/awsl/config.json", "path to config file")
 	debug := flag.Bool("d", false, "debug")
 	flag.Parse()
@@ -25,14 +27,27 @@ func init() {
 	if err != nil {
 		panic(err)
 	}
-	err = json.Unmarshal(confBytes, &Conf)
+	conf = &model.Object{}
+	err = json.Unmarshal(confBytes, conf)
 	if err != nil {
 		panic(err)
 	}
-	if Conf.BufSize == 0 {
-		Conf.BufSize = 32
+	if conf.BufSize == 0 {
+		conf.BufSize = 32
 	}
 	if Debug {
-		Conf.NoVerify = true
+		conf.NoVerify = true
 	}
+}
+
+// GetConf GetConf
+func GetConf() model.Object {
+	if conf == nil {
+		lock.Lock()
+		if conf == nil {
+			initConf()
+		}
+		lock.Unlock()
+	}
+	return *conf
 }
