@@ -8,6 +8,7 @@ import (
 	"net"
 	"strconv"
 
+	"github.com/Evi1/awsl/config"
 	"github.com/Evi1/awsl/model"
 	"github.com/Evi1/awsl/tools"
 )
@@ -41,9 +42,12 @@ func (s SockeServer) Listen() net.Listener {
 func (s SockeServer) ReadRemote(c net.Conn) (model.ANetAddr, error) {
 	sc, ok := c.(socksConn)
 	if !ok {
-		uc, ok := c.(udpConn)
+		uc, ok := c.(*udpConn)
 		if !ok {
 			return model.ANetAddr{}, errors.New("invalid connection type")
+		}
+		if config.Debug {
+			log.Println("udp read remote")
 		}
 		return uc.remoteAddr, nil
 	}

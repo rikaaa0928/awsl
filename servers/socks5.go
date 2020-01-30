@@ -13,6 +13,12 @@ import (
 	"github.com/Evi1/awsl/tools"
 )
 
+var udpPort int
+
+func init() {
+	udpPort = 65535
+}
+
 // NewSocks5 NewSocks5
 func NewSocks5(listenHost string, listenPort string) Socke5Server {
 	return Socke5Server{
@@ -42,7 +48,7 @@ func (s Socke5Server) Listen() net.Listener {
 func (s Socke5Server) ReadRemote(c net.Conn) (model.ANetAddr, error) {
 	sc, ok := c.(socksConn)
 	if !ok {
-		uc, ok := c.(udpConn)
+		uc, ok := c.(*udpConn)
 		if !ok {
 			return model.ANetAddr{}, errors.New("invalid connection type")
 		}
@@ -116,21 +122,22 @@ func socks5Stage2(conn net.Conn, buf []byte, listenIP string) (net.Conn, error) 
 		uc.remoteAddr = addr
 		lp, err := uc.HandleUDP(conn)
 		if err != nil {
-			return *uc, err
+			conn.Close()
+			return nil, err
 		}
 		d := []byte("\x05\x00\x00\x01\x00\x00\x00\x00\xff\xff")
 		copy(d[4:8], []byte(net.ParseIP(listenIP).To4()))
 		bufer := new(bytes.Buffer)
-		err = binary.Write(bufer, binary.LittleEndian, lp)
+		err = binary.Write(bufer, binary.LittleEndian, int16(lp))
 		if err != nil {
-			return *uc, err
+			return uc, err
 		}
 		copy(d[8:], bufer.Bytes())
 		_, err = conn.Write(d)
 		if err != nil {
-			return *uc, err
+			return uc, err
 		}
-		return *uc, nil
+		return uc, nil
 	default:
 		return conn, errors.New("unsuported or invalid cmd : " + strconv.Itoa(int(buf[1])))
 	}
@@ -142,32 +149,50 @@ type socksConn struct {
 }
 
 type udpConn struct {
-	socksConn
-	tcpCon      net.Conn
-	ip          string
-	udpListener net.Listener
+	*net.UDPConn
+	remoteAddr model.ANetAddr
+	tcpCon     net.Conn
+	ip         string
+	addr       net.Addr
+	//udpListener net.Listener
 }
 
 func (c *udpConn) HandleUDP(conn net.Conn) (int, error) {
 	listened := false
 	c.tcpCon = conn
-	var err error
-	p := 65536
-	for !listened && p > 1 {
-		p--
-		c.udpListener, err = net.Listen("udp", c.ip+":"+strconv.Itoa(p))
+	p := 0
+	if udpPort <= 1024 {
+		udpPort = 65535
+	}
+	for times := 0; !listened && times < 10; times++ {
+		//c.udpListener, err = net.Listen("udp", c.ip+":"+strconv.Itoa(p))
+		addr, err := net.ResolveUDPAddr("udp", c.ip+":"+strconv.Itoa(udpPort))
+		if err != nil {
+			udpPort--
+			return p, err
+		}
+		/*c.udpListener, err = net.ListenUDP("udp", addr)
 		if err != nil {
 			if config.Debug {
 				log.Println("udp listen err port : " + strconv.Itoa(p) + " err : " + err.Error())
 			}
 			continue
-		}
-		conn, err := c.udpListener.Accept()
+		}*/
+		udpConn, err := net.ListenUDP("udp", addr)
 		if err != nil {
-			return p, err
+			if config.Debug {
+				log.Println("udp listen err. addr : " + addr.String() + ". err : " + err.Error())
+			}
+			udpPort--
+			continue
 		}
-		c.Conn = conn
+		c.UDPConn = udpConn
+		p = udpPort
 		listened = true
+		if config.Debug {
+			log.Println("udp:listen : ", udpConn.LocalAddr(), udpConn.RemoteAddr(), udpPort)
+		}
+		udpPort--
 	}
 	if !listened {
 		return p, errors.New("failed to find udp listenning port")
@@ -185,21 +210,46 @@ func (c *udpConn) HandleUDP(conn net.Conn) (int, error) {
 				break
 			}
 		}
-		c.udpListener.Close()
-		c.Conn.Close()
+		//c.udpListener.Close()
+		c.UDPConn.Close()
 	}()
 	return p, nil
 }
 
-func (c udpConn) Close() error {
+func (c *udpConn) Read(b []byte) (n int, err error) {
+	if config.Debug {
+		log.Println("udp", "start read", c.addr, c.UDPConn.LocalAddr())
+	}
+	n, c.addr, err = c.UDPConn.ReadFrom(b)
+	if config.Debug {
+		log.Println("udp", "read", n, c.addr, err, c.UDPConn.LocalAddr())
+	}
+	return
+}
+
+func (c *udpConn) Write(b []byte) (n int, err error) {
+	if config.Debug {
+		log.Println("udp", "start write", c.addr, c.UDPConn.LocalAddr())
+	}
+	n, err = c.UDPConn.WriteTo(b, c.addr)
+	if config.Debug {
+		log.Println("udp", "write", n, c.addr, err, c.UDPConn.LocalAddr())
+	}
+	return
+}
+
+func (c *udpConn) Close() error {
+	if config.Debug {
+		log.Println("udp", "close", c.addr, c.UDPConn.LocalAddr())
+	}
 	if c.tcpCon != nil {
 		c.tcpCon.Close()
 	}
-	if c.udpListener != nil {
+	/*if c.udpListener != nil {
 		c.udpListener.Close()
-	}
-	if c.Conn != nil {
-		return c.Conn.Close()
+	}*/
+	if c.UDPConn != nil {
+		return c.UDPConn.Close()
 	}
 	return nil
 }
