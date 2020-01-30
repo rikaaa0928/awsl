@@ -8,6 +8,7 @@ import (
 	"net"
 	"strconv"
 
+	"github.com/Evi1/awsl/config"
 	"github.com/Evi1/awsl/model"
 	"github.com/Evi1/awsl/tools"
 )
@@ -106,6 +107,9 @@ func socks5Stage2(conn net.Conn, buf []byte, listenIP string) (net.Conn, error) 
 		}
 		return sc, nil
 	case 3:
+		if config.Debug {
+			log.Println("udp")
+		}
 		uc := &udpConn{}
 		uc.ip = listenIP
 		addr.CMD = model.UDP
@@ -153,7 +157,9 @@ func (c *udpConn) HandleUDP(conn net.Conn) (int, error) {
 		p--
 		c.udpListener, err = net.Listen("udp", c.ip+":"+strconv.Itoa(p))
 		if err != nil {
-			log.Println("udp listen err port : " + strconv.Itoa(p) + " err : " + err.Error())
+			if config.Debug {
+				log.Println("udp listen err port : " + strconv.Itoa(p) + " err : " + err.Error())
+			}
 			continue
 		}
 		conn, err := c.udpListener.Accept()
