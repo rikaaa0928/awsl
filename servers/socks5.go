@@ -164,7 +164,7 @@ func (c *udpConn) HandleUDP(conn net.Conn) (int, error) {
 	if udpPort <= 1024 {
 		udpPort = 65535
 	}
-	for times := 0; !listened && times < 10; times++ {
+	for times := 0; !listened && times < 1024; times++ {
 		//c.udpListener, err = net.Listen("udp", c.ip+":"+strconv.Itoa(p))
 		addr, err := net.ResolveUDPAddr("udp", c.ip+":"+strconv.Itoa(udpPort))
 		if err != nil {
@@ -200,8 +200,9 @@ func (c *udpConn) HandleUDP(conn net.Conn) (int, error) {
 	go func() {
 		buf := tools.MemPool.Get(65535)
 		defer tools.MemPool.Put(buf)
+		var err error
 		for {
-			_, err := conn.Read(buf)
+			_, err = conn.Read(buf)
 			if err != nil {
 				nerr, ok := err.(net.Error)
 				if ok && nerr.Timeout() {
@@ -209,6 +210,10 @@ func (c *udpConn) HandleUDP(conn net.Conn) (int, error) {
 				}
 				break
 			}
+		}
+		c.tcpCon.Close()
+		if config.Debug {
+			log.Println("udp", "tcp close", err)
 		}
 		//c.udpListener.Close()
 		c.UDPConn.Close()
