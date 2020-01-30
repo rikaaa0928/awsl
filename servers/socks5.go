@@ -153,6 +153,7 @@ func (c *udpConn) HandleUDP(conn net.Conn) (int, error) {
 		p--
 		c.udpListener, err = net.Listen("udp", c.ip+":"+strconv.Itoa(p))
 		if err != nil {
+			log.Println("udp listen err port : " + strconv.Itoa(p) + " err : " + err.Error())
 			continue
 		}
 		conn, err := c.udpListener.Accept()
@@ -191,5 +192,8 @@ func (c udpConn) Close() error {
 	if c.udpListener != nil {
 		c.udpListener.Close()
 	}
-	return c.Conn.Close()
+	if c.Conn != nil {
+		return c.Conn.Close()
+	}
+	return nil
 }
