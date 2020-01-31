@@ -1,14 +1,12 @@
 package servers
 
+/*
 import (
-	"bytes"
-	"encoding/binary"
 	"errors"
 	"log"
 	"net"
 	"strconv"
 
-	"github.com/Evi1/awsl/config"
 	"github.com/Evi1/awsl/model"
 	"github.com/Evi1/awsl/tools"
 )
@@ -113,31 +111,8 @@ func socks5Stage2(conn net.Conn, buf []byte, listenIP string) (net.Conn, error) 
 		}
 		return sc, nil
 	case 3:
-		if config.Debug {
-			log.Println("udp")
-		}
-		uc := &udpConn{}
-		uc.ip = listenIP
-		addr.CMD = model.UDP
-		uc.remoteAddr = addr
-		lp, err := uc.HandleUDP(conn)
-		if err != nil {
-			conn.Close()
-			return nil, err
-		}
-		d := []byte("\x05\x00\x00\x01\x00\x00\x00\x00\xff\xff")
-		copy(d[4:8], []byte(net.ParseIP(listenIP).To4()))
-		bufer := new(bytes.Buffer)
-		err = binary.Write(bufer, binary.LittleEndian, int16(lp))
-		if err != nil {
-			return uc, err
-		}
-		copy(d[8:], bufer.Bytes())
-		_, err = conn.Write(d)
-		if err != nil {
-			return uc, err
-		}
-		return uc, nil
+
+		return nil, ErrUDP
 	default:
 		return conn, errors.New("unsuported or invalid cmd : " + strconv.Itoa(int(buf[1])))
 	}
@@ -147,114 +122,4 @@ type socksConn struct {
 	net.Conn
 	remoteAddr model.ANetAddr
 }
-
-type udpConn struct {
-	*net.UDPConn
-	remoteAddr model.ANetAddr
-	tcpCon     net.Conn
-	ip         string
-	addr       net.Addr
-	//udpListener net.Listener
-}
-
-func (c *udpConn) HandleUDP(conn net.Conn) (int, error) {
-	listened := false
-	c.tcpCon = conn
-	p := 0
-	if udpPort <= 1024 {
-		udpPort = 65535
-	}
-	for times := 0; !listened && times < 1024; times++ {
-		//c.udpListener, err = net.Listen("udp", c.ip+":"+strconv.Itoa(p))
-		addr, err := net.ResolveUDPAddr("udp", c.ip+":"+strconv.Itoa(udpPort))
-		if err != nil {
-			udpPort--
-			return p, err
-		}
-		/*c.udpListener, err = net.ListenUDP("udp", addr)
-		if err != nil {
-			if config.Debug {
-				log.Println("udp listen err port : " + strconv.Itoa(p) + " err : " + err.Error())
-			}
-			continue
-		}*/
-		udpConn, err := net.ListenUDP("udp", addr)
-		if err != nil {
-			if config.Debug {
-				log.Println("udp listen err. addr : " + addr.String() + ". err : " + err.Error())
-			}
-			udpPort--
-			continue
-		}
-		c.UDPConn = udpConn
-		p = udpPort
-		listened = true
-		if config.Debug {
-			log.Println("udp:listen : ", udpConn.LocalAddr(), udpConn.RemoteAddr(), udpPort)
-		}
-		udpPort--
-	}
-	if !listened {
-		return p, errors.New("failed to find udp listenning port")
-	}
-	go func() {
-		buf := tools.MemPool.Get(65535)
-		defer tools.MemPool.Put(buf)
-		var err error
-		for {
-			_, err = conn.Read(buf)
-			if err != nil {
-				nerr, ok := err.(net.Error)
-				if ok && nerr.Timeout() {
-					continue
-				}
-				break
-			}
-		}
-		c.tcpCon.Close()
-		if config.Debug {
-			log.Println("udp", "tcp close", err)
-		}
-		//c.udpListener.Close()
-		c.UDPConn.Close()
-	}()
-	return p, nil
-}
-
-func (c *udpConn) Read(b []byte) (n int, err error) {
-	if config.Debug {
-		log.Println("udp", "start read", c.addr, c.UDPConn.LocalAddr())
-	}
-	n, c.addr, err = c.UDPConn.ReadFrom(b)
-	if config.Debug {
-		log.Println("udp", "read", n, c.addr, err, c.UDPConn.LocalAddr())
-	}
-	return
-}
-
-func (c *udpConn) Write(b []byte) (n int, err error) {
-	if config.Debug {
-		log.Println("udp", "start write", c.addr, c.UDPConn.LocalAddr())
-	}
-	n, err = c.UDPConn.WriteTo(b, c.addr)
-	if config.Debug {
-		log.Println("udp", "write", n, c.addr, err, c.UDPConn.LocalAddr())
-	}
-	return
-}
-
-func (c *udpConn) Close() error {
-	if config.Debug {
-		log.Println("udp", "close", c.addr, c.UDPConn.LocalAddr())
-	}
-	if c.tcpCon != nil {
-		c.tcpCon.Close()
-	}
-	/*if c.udpListener != nil {
-		c.udpListener.Close()
-	}*/
-	if c.UDPConn != nil {
-		return c.UDPConn.Close()
-	}
-	return nil
-}
+*/

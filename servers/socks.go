@@ -8,7 +8,6 @@ import (
 	"net"
 	"strconv"
 
-	"github.com/Evi1/awsl/config"
 	"github.com/Evi1/awsl/model"
 	"github.com/Evi1/awsl/tools"
 )
@@ -42,19 +41,13 @@ func (s SockeServer) Listen() net.Listener {
 func (s SockeServer) ReadRemote(c net.Conn) (model.ANetAddr, error) {
 	sc, ok := c.(socksConn)
 	if !ok {
-		uc, ok := c.(*udpConn)
-		if !ok {
-			return model.ANetAddr{}, errors.New("invalid connection type")
-		}
-		if config.Debug {
-			log.Println("udp read remote")
-		}
-		return uc.remoteAddr, nil
+		return model.ANetAddr{}, errors.New("invalid connection type")
 	}
 	return sc.remoteAddr, nil
 }
 
 type socksListenner struct {
+	udpListener net.UDPConn
 	net.Listener
 	IP string
 }
@@ -107,4 +100,41 @@ func socks4(conn net.Conn, buf []byte, n int) (net.Conn, error) {
 		return conn, err
 	}
 	return socksConn{Conn: conn, remoteAddr: model.ANetAddr{Typ: model.IPV4ADDR, CMD: model.TCP, Host: ipStr, Port: int(port)}}, nil
+}
+
+func socks5Stage2(conn net.Conn, buf []byte, listenIP string) (net.Conn, error) {
+	addr := model.ANetAddr{}
+	n, err := conn.Read(buf)
+	if err != nil {
+		return conn, err
+	}
+	if n < 2 {
+		return conn, errors.New("invalid length")
+	}
+	addr.Host, addr.Typ = getRemoteHost5(buf[:n])
+	remotePort := getRemotePort5(buf[:n])
+	addr.Port = remotePort
+
+	switch buf[1] {
+	case 1:
+		sc := socksConn{}
+		addr.CMD = model.TCP
+		sc.remoteAddr = addr
+		sc.Conn = conn
+		_, err = conn.Write([]byte("\x05\x00\x00\x01\x00\x00\x00\x00\xff\xff"))
+		if err != nil {
+			return sc, err
+		}
+		return sc, nil
+	case 3:
+		conn.Close()
+		return nil, ErrUDP
+	default:
+		return conn, errors.New("unsuported or invalid cmd : " + strconv.Itoa(int(buf[1])))
+	}
+}
+
+type socksConn struct {
+	net.Conn
+	remoteAddr model.ANetAddr
 }

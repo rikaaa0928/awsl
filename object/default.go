@@ -105,7 +105,9 @@ func (o *DefaultObject) handelOneServer(i int, w *sync.WaitGroup) {
 	for !o.stop {
 		c, err := l.Accept()
 		if err != nil {
-			log.Println(err)
+			if err != servers.ErrUDP {
+				log.Println(err)
+			}
 			if c != nil {
 				c.Close()
 			}

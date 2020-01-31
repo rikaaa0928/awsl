@@ -1,10 +1,14 @@
 package servers
 
 import (
+	"errors"
 	"net"
 
 	"github.com/Evi1/awsl/model"
 )
+
+// ErrUDP ErrUDP
+var ErrUDP = errors.New("udp error")
 
 // Server listen and handel incomming
 type Server interface {
