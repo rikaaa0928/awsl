@@ -68,6 +68,7 @@ func (s *AWSL) awslHandler(conn *websocket.Conn) {
 	if config.Debug {
 		num := <-s.ConnNum
 		num--
+		log.Println("current conn: " + strconv.Itoa(num))
 		if num == 0 {
 			log.Println("Connection clear")
 		}
