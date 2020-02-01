@@ -16,9 +16,9 @@ func TestBinary(t *testing.T) {
 	}
 	t.Logf("% x", len(buf.Bytes()))
 
-	b := []byte{ 0x0, 0x01}
+	b := []byte{ 0xff, 0xff}
 	tb := bytes.NewBuffer(b)
-	var y int16
+	var y uint16
 	binary.Read(tb, binary.BigEndian, &y)
 	t.Log(y)
 }

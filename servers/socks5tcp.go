@@ -119,7 +119,7 @@ func getRemotePort5(data []byte) (x int) {
 	}()
 	tt := data[len(data)-2:]
 	tb := bytes.NewBuffer(tt)
-	var y int16
+	var y uint16
 	binary.Read(tb, binary.BigEndian, &y)
 	x = int(y)
 	return
