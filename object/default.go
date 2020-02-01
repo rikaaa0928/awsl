@@ -72,12 +72,14 @@ func (o *DefaultObject) handelOneClient(i int) {
 			go func() {
 				c, err := o.C[i].Dial(m.a)
 				if err != nil {
-					log.Println(err)
+					m.c.Close()
+					log.Println("client Dial error. client no.", i, " error = ", err)
 					return
 				}
 				err = o.C[i].Verify(c)
 				if err != nil {
-					log.Println(err)
+					m.c.Close()
+					log.Println("client Verify error. client no.", i, " error = ", err)
 					c.Close()
 					return
 				}
@@ -106,7 +108,7 @@ func (o *DefaultObject) handelOneServer(i int, w *sync.WaitGroup) {
 		c, err := l.Accept()
 		if err != nil {
 			if err != servers.ErrUDP {
-				log.Println(err)
+				log.Println("server Accept error. server no.", i, " error = ", err)
 			}
 			if c != nil {
 				c.Close()
@@ -116,7 +118,7 @@ func (o *DefaultObject) handelOneServer(i int, w *sync.WaitGroup) {
 		go func() {
 			addr, err := o.S[i].ReadRemote(c)
 			if err != nil {
-				log.Println(err)
+				log.Println("server ReadRemote error. server no.", i, " error = ", err)
 				c.Close()
 				return
 			}

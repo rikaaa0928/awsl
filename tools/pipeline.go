@@ -2,6 +2,7 @@ package tools
 
 import (
 	"io"
+	"log"
 	"net"
 	"time"
 )
@@ -20,9 +21,9 @@ func PipeThenClose(src, dst net.Conn) {
 	buf := MemPool.Get(65536)
 	defer MemPool.Put(buf)
 
-	io.CopyBuffer(dst, src, buf)
-	/*for {
-		SetReadTimeout(src, 3*time.Second)
+	//io.CopyBuffer(dst, src, buf)
+	for {
+		// SetReadTimeout(src, 3*time.Second)
 		n, err := src.Read(buf)
 		// read may return EOF with n > 0
 		// should always process n > 0 bytes before handling error
@@ -35,12 +36,13 @@ func PipeThenClose(src, dst net.Conn) {
 		}
 		if err != nil {
 			e, ok := err.(*net.OpError)
-			if ok && !e.Temporary() && !config.Debug {
-				break
-			}
-			et, ok := err.(net.Error)
-			if ok && et.Timeout() {
-				break
+			if ok {
+				if e.Timeout() {
+					break
+				}
+				if !e.Temporary() {
+					break
+				}
 			}
 			if err == io.EOF {
 				break
@@ -48,5 +50,5 @@ func PipeThenClose(src, dst net.Conn) {
 			log.Println("pip read: " + err.Error())
 			break
 		}
-	}*/
+	}
 }
