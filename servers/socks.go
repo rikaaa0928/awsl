@@ -238,18 +238,27 @@ type socksUDPConn struct {
 }
 
 func (c *socksUDPConn) Read(b []byte) (int, error) {
+	if c.UDPConn == nil {
+		return 0, errors.New("udp read : nil udpConn")
+	}
 	n, addr, e := c.ReadFrom(b)
 	c.reqAddr = addr
 	return n, e
 }
 
 func (c *socksUDPConn) Write(b []byte) (int, error) {
+	if c.UDPConn == nil {
+		return 0, errors.New("udp write : nil udpConn")
+	}
 	return c.WriteTo(b, c.reqAddr)
 }
 
 func (c *socksUDPConn) Close() error {
 	c.close = true
-	return c.Close()
+	if c.UDPConn != nil {
+		return c.UDPConn.Close()
+	}
+	return nil
 }
 
 func (c *socksUDPConn) GetRemote() model.ANetAddr {
