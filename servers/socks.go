@@ -134,12 +134,15 @@ func (l socksListenner) socks5Stage2(conn net.Conn, buf []byte) (net.Conn, error
 		}
 		return sc, nil
 	case 3:
-		go func() {
-			err = l.newSocksUDPConn(conn)
-			if err != nil {
-				conn.Close()
-			}
-		}()
+		if config.UDP {
+			go func() {
+				err = l.newSocksUDPConn(conn)
+				if err != nil {
+					log.Println("udp new connction err.", err)
+					conn.Close()
+				}
+			}()
+		}
 		return nil, ErrUDP
 	default:
 		return conn, errors.New("unsuported or invalid cmd : " + strconv.Itoa(int(buf[1])))

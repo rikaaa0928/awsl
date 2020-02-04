@@ -18,11 +18,16 @@ var lock sync.Mutex
 // Debug debug
 var Debug bool
 
+// UDP useudp
+var UDP bool
+
 func initConf() {
 	configFile := flag.String("c", "/etc/awsl/config.json", "path to config file")
 	debug := flag.Bool("d", false, "debug")
+	udp := flag.Bool("u", false, "udp")
 	flag.Parse()
 	Debug = *debug
+	UDP = *udp
 	confBytes, err := ioutil.ReadFile(filepath.FromSlash(*configFile))
 	if err != nil {
 		panic(err)
