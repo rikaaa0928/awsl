@@ -16,7 +16,7 @@ type ANetAddr struct {
 	CMD  int // 0 tcp 1 udp
 }
 
-// AddrWithAuth addr
+// AddrWithAuth addr used by awsl
 type AddrWithAuth struct {
 	ANetAddr
 	Auth string

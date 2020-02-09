@@ -97,6 +97,7 @@ func (s *HTTPServer) Listen() net.Listener {
 				}
 
 			} else {
+				log.Println(r.Host)
 				w.WriteHeader(http.StatusBadRequest)
 				return
 			}

@@ -142,6 +142,8 @@ func (l socksListenner) socks5Stage2(conn net.Conn, buf []byte) (net.Conn, error
 					conn.Close()
 				}
 			}()
+		} else {
+			conn.Close()
 		}
 		return nil, ErrUDP
 	default:

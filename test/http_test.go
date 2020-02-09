@@ -17,7 +17,7 @@ func transfer(destination io.WriteCloser, source io.ReadCloser) {
 func TestHttp(t *testing.T) {
 	fmt.Println("start")
 	server := &http.Server{
-		Addr: ":48880",
+		Addr: ":48881",
 		Handler: http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			if r.Method == http.MethodConnect {
 				fmt.Println(r.Host)
@@ -39,7 +39,16 @@ func TestHttp(t *testing.T) {
 				go transfer(dest_conn, client_conn)
 				go transfer(client_conn, dest_conn)
 			} else {
-				w.WriteHeader(http.StatusBadRequest)
+				fmt.Println(r.Host)
+				res, err := http.Get("http://" + r.Host)
+				if err != nil {
+					fmt.Println(err)
+				}
+				bs := make([]byte, 65536)
+				w.WriteHeader(res.StatusCode)
+				n, _ := res.Body.Read(bs)
+				w.Write(bs[:n])
+				//w.WriteHeader(http.StatusBadRequest)
 				return
 			}
 		}),
