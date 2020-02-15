@@ -1,10 +1,10 @@
 package object
 
-import "github.com/Evi1/awsl/model"
-
-import "github.com/Evi1/awsl/clients"
-
-import "github.com/Evi1/awsl/servers"
+import (
+	"github.com/Evi1/awsl/clients"
+	"github.com/Evi1/awsl/model"
+	"github.com/Evi1/awsl/servers"
+)
 
 // NewObject NewObject
 func NewObject(conf model.Object) Object {

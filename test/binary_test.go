@@ -16,7 +16,7 @@ func TestBinary(t *testing.T) {
 	}
 	t.Logf("% x", len(buf.Bytes()))
 
-	b := []byte{ 0xff, 0xff}
+	b := []byte{0xff, 0xff}
 	tb := bytes.NewBuffer(b)
 	var y uint16
 	binary.Read(tb, binary.BigEndian, &y)
@@ -52,4 +52,11 @@ func TestStruct(t *testing.T) {
 	var o ia
 	o = b{}
 	t.Log(o.(b))
+}
+
+func TestNet(t *testing.T) {
+	t.Log(net.LookupAddr("127.0.0.1"))
+	t.Log(net.LookupHost("bilibili.network"))
+	t.Log(net.LookupIP("bilibili.network"))
+	t.Log(net.ResolveIPAddr("ip", "bilibili.network"))
 }
