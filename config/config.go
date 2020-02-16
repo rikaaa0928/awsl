@@ -1,16 +1,17 @@
 package config
 
-import "flag"
+import (
+	"encoding/json"
+	"flag"
+	"io"
+	"io/ioutil"
+	"log"
+	"os"
+	"path/filepath"
+	"sync"
 
-import "io/ioutil"
-
-import "encoding/json"
-
-import "github.com/Evi1/awsl/model"
-
-import "path/filepath"
-
-import "sync"
+	"github.com/Evi1/awsl/model"
+)
 
 var conf *model.Object
 var lock sync.Mutex
@@ -25,6 +26,8 @@ func initConf() {
 	configFile := flag.String("c", "/etc/awsl/config.json", "path to config file")
 	debug := flag.Bool("d", false, "debug")
 	udp := flag.Bool("u", false, "udp")
+	nostd := flag.Bool("nostd", false, "nostd")
+	logFile := flag.String("l", "", "log file location")
 	flag.Parse()
 	Debug = *debug
 	UDP = *udp
@@ -43,6 +46,24 @@ func initConf() {
 	if Debug {
 		conf.NoVerify = true
 	}
+	// log
+	var writerList []io.Writer
+	if !*nostd {
+		writerList = append(writerList, os.Stdout)
+	}
+	if logFile != nil && len(*logFile) != 0 {
+		writer, err := os.OpenFile(*logFile, os.O_WRONLY|os.O_CREATE, 0644)
+		if err != nil {
+			panic(err)
+		}
+		writerList = append(writerList, writer)
+	}
+	if len(writerList) == 0 {
+		log.SetOutput(ioutil.Discard)
+	} else {
+		log.SetOutput(io.MultiWriter(writerList...))
+	}
+
 }
 
 // GetConf GetConf
