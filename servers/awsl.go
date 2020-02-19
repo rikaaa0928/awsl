@@ -80,15 +80,17 @@ func (s *AWSL) awslHandler(conn *websocket.Conn) {
 // Listen server
 func (s *AWSL) Listen() net.Listener {
 	log.Println(s.IP+":"+s.Port, s.Cert, s.Key)
-	http.Handle("/"+s.URI, websocket.Handler(s.awslHandler))
+	mux := http.NewServeMux()
+	mux.Handle("/"+s.URI, websocket.Handler(s.awslHandler))
+	//http.Handle("/"+s.URI, websocket.Handler(s.awslHandler))
 	go func() {
 		if len(s.Cert) == 0 || len(s.Key) == 0 {
-			err := http.ListenAndServe(s.IP+":"+s.Port, nil)
+			err := http.ListenAndServe(s.IP+":"+s.Port, mux)
 			if err != nil {
 				panic("ListenAndServe: " + err.Error())
 			}
 		} else {
-			err := http.ListenAndServeTLS(s.IP+":"+s.Port, s.Cert, s.Key, nil)
+			err := http.ListenAndServeTLS(s.IP+":"+s.Port, s.Cert, s.Key, mux)
 			if err != nil {
 				panic("ListenAndServe: " + err.Error())
 			}
@@ -138,7 +140,7 @@ func (l *AWSListener) Close() error {
 }
 
 // Addr Addr
-func (l AWSListener) Addr() net.Addr {
+func (l *AWSListener) Addr() net.Addr {
 	return &net.IPAddr{
 		IP:   net.ParseIP(l.IP),
 		Zone: "",

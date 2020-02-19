@@ -31,4 +31,6 @@ $GOPATH/bin/awsl > $logfile 2>&1
 Set ws = CreateObject("Wscript.Shell") 
 ws.run "wsl -d $wsl_name -e sudo $path_to_wsl_run.sh", vbhide
 ```
-5. 使用任务计划程序添加vbs
+5. 使用任务计划程序添加vbs  
+## windows
+[使用vbs管理awsl.exe](https://blog.bilibili.network/posts/vbs_service/ "vbs")
