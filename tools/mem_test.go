@@ -11,7 +11,7 @@ func BenchmarkMem(b *testing.B) {
 	for i := 0; i < 1000*1000; i++ {
 		m.Add(1)
 		go func() {
-			c := make([]byte, 65535)
+			c := make([]byte, 65536)
 			copy(c, a)
 			m.Done()
 		}()
@@ -26,7 +26,7 @@ func BenchmarkMemPool(b *testing.B) {
 	for i := 0; i < 1000*1000; i++ {
 		m.Add(1)
 		go func() {
-			c := p.Get(655335)
+			c := p.Get(655336)
 			copy(c, a)
 			p.Put(c)
 			m.Done()

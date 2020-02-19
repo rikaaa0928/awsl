@@ -60,3 +60,22 @@ func TestNet(t *testing.T) {
 	t.Log(net.LookupIP("bilibili.network"))
 	t.Log(net.ResolveIPAddr("ip", "bilibili.network"))
 }
+
+func TestNum(t *testing.T) {
+	var n uint64 = 0
+	m := n - 1
+	t.Log(m)
+	t.Log(m + 1)
+}
+
+func TestChan(t *testing.T) {
+	c := make(chan int)
+	c2 := make(chan int)
+	close(c)
+	select {
+	case <-c:
+		t.Log("???")
+	case <-c2:
+		t.Log("?")
+	}
+}
