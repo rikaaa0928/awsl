@@ -3,6 +3,7 @@ package clients
 import (
 	"crypto/tls"
 	"encoding/json"
+	"errors"
 	"net"
 
 	"github.com/Evi1/awsl/config"
@@ -51,7 +52,10 @@ func (c *AWSL) Dial(addr model.ANetAddr) (net.Conn, error) {
 
 // Verify Verify
 func (c *AWSL) Verify(conn net.Conn) error {
-	ws := conn.(awslConn)
+	ws, ok := conn.(awslConn)
+	if !ok {
+		return errors.New("wrong type")
+	}
 	auth := model.AddrWithAuth{ANetAddr: ws.Addr, Auth: c.Auth}
 	addrBytes, err := json.Marshal(auth)
 	if err != nil {

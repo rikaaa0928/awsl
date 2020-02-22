@@ -3,18 +3,34 @@ package servers
 import (
 	"encoding/json"
 	"errors"
-	"fmt"
 	"io"
 	"io/ioutil"
+	"log"
 	"net"
 	"net/http"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/Evi1/awsl/model"
 	"github.com/Evi1/awsl/tools"
 )
+
+// NewAHL NewAHL
+func NewAHL(listenHost, listenPort, uri, auth, key, cert string, connsSize int) *AHL {
+	return &AHL{
+		IP:        listenHost,
+		Port:      listenPort,
+		URI:       uri + "/",
+		Auth:      auth,
+		Key:       key,
+		Cert:      cert,
+		connPool:  make(map[uint64]*ahlConn),
+		Conns:     make(chan net.Conn, connsSize),
+		CloseChan: make(chan int8),
+		poolLock:  sync.Mutex{}}
+}
 
 // AHL AHL
 type AHL struct {
@@ -25,6 +41,7 @@ type AHL struct {
 	Cert      string
 	Key       string
 	connPool  map[uint64]*ahlConn
+	poolLock  sync.Mutex
 	id        uint64
 	Conns     chan net.Conn
 	CloseChan chan int8
@@ -41,18 +58,21 @@ func (s *AHL) serve(w http.ResponseWriter, r *http.Request) {
 				return
 			}
 			if pw.Value != s.Auth {
+				log.Println(pw.Value, s.Auth)
 				w.WriteHeader(http.StatusNonAuthoritativeInfo)
 				return
 			}
 			addrStr := r.Form.Get("addr")
 			addr := model.ANetAddr{}
 			json.Unmarshal([]byte(addrStr), &addr)
+			s.poolLock.Lock()
 			_, ok := s.connPool[s.id]
 			for ok {
 				s.id++
 				_, ok = s.connPool[s.id]
 			}
-			s.connPool[s.id] = newAHlConn(addr)
+			s.connPool[s.id] = newAHlConn(addr, s, s.id)
+			s.poolLock.Unlock()
 			w.WriteHeader(http.StatusOK)
 			w.Write([]byte(strconv.FormatUint(s.id, 10)))
 			s.Conns <- s.connPool[s.id]
@@ -66,23 +86,21 @@ func (s *AHL) serve(w http.ResponseWriter, r *http.Request) {
 				w.WriteHeader(http.StatusNonAuthoritativeInfo)
 				return
 			}
-			id, err := r.Cookie("id")
+			id := string([]rune(r.URL.RequestURI())[len(s.URI)+1:])
+			uid, err := strconv.ParseUint(id, 10, 64)
 			if err != nil {
 				w.WriteHeader(http.StatusNotAcceptable)
 				return
 			}
-			uid, err := strconv.ParseUint(id.Value, 10, 64)
-			if err != nil {
-				w.WriteHeader(http.StatusNotAcceptable)
-				return
-			}
+			s.poolLock.Lock()
 			conn, ok := s.connPool[uid]
+			s.poolLock.Unlock()
 			if !ok {
 				w.WriteHeader(http.StatusNotAcceptable)
 				return
 			}
 			conn.Close()
-			delete(s.connPool, uid)
+			//delete(s.connPool, uid)
 		default:
 			w.WriteHeader(http.StatusNotAcceptable)
 		}
@@ -107,36 +125,63 @@ func (s *AHL) serve(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(http.StatusNotAcceptable)
 			return
 		}
-		fmt.Println(string(req))
 		conn, ok := s.connPool[uid]
-		if !ok {
+		if !ok || conn.closed {
 			w.WriteHeader(http.StatusNotAcceptable)
 			return
 		}
-		buf := tools.MemPool.Get(65536)
-		defer tools.MemPool.Put(buf)
-
-		n, err := writeToChan(conn.ReadChan, conn.close, req)
-		fmt.Println("write req", n, string(req))
-		if err != nil {
-			w.WriteHeader(http.StatusNotAcceptable)
-			w.Write([]byte(err.Error()))
-			conn.Close()
-			return
+		if len(req) > 0 {
+			data := connData{data: make([]byte, len(req)), n: len(req)}
+			copy(data.data, req)
+			conn.ReadLock.Lock()
+			conn.ReadBuf = append(conn.ReadBuf, data)
+			conn.ReadLock.Unlock()
 		}
-
-		n, err = readFromChan(conn.WriteChan, conn.close, buf)
-		fmt.Println("readFromChan WriteChan", n, string(buf[:n]))
-		if n != 0 {
+		// time.Sleep(10 * time.Millisecond)
+		timeOut := time.Now().Add(3 * time.Second)
+		for time.Now().Before(timeOut) {
+			if len(conn.WriteBuf) == 0 {
+				time.Sleep(time.Second)
+				continue
+			}
+			conn.WriteLock.Lock()
+			if len(conn.WriteBuf) == 0 {
+				conn.WriteLock.Unlock()
+				continue
+			}
+			w.Header().Set("Num", strconv.Itoa(len(conn.WriteBuf)-1))
+			w.Header().Set("Content-Type", "application/octet-stream")
 			w.WriteHeader(http.StatusOK)
-			w.Write(buf[:n])
+			buf := conn.WriteBuf[0]
+			_, err = w.Write(buf.data)
+			if err == nil {
+				conn.WriteBuf = conn.WriteBuf[1:]
+				log.Println(conn.id, len(conn.WriteBuf))
+			}
+			conn.WriteLock.Unlock()
+			return
 		}
-		if err != nil {
-			w.WriteHeader(http.StatusNotAcceptable)
-			w.Write([]byte(err.Error()))
-			conn.Close()
-		}
+		w.WriteHeader(http.StatusAccepted)
 
+		/*conn.WriteLock.Lock()
+		bufLen := len(conn.WriteBuf)
+		if bufLen == 0 {
+			conn.WriteLock.Unlock()
+			time.Sleep(time.Second)
+			conn.WriteLock.Lock()
+			bufLen = len(conn.WriteBuf)
+		}
+		defer conn.WriteLock.Unlock()
+		if bufLen == 0 {
+			w.WriteHeader(http.StatusAccepted)
+			return
+		}
+		w.Header().Set("Num", strconv.Itoa(bufLen-1))
+		w.Header().Set("Content-Type", "application/octet-stream")
+		w.WriteHeader(http.StatusOK)
+		buf := conn.WriteBuf[0]
+		w.Write(buf.data)
+		conn.WriteBuf = conn.WriteBuf[1:]*/
 	} else {
 		w.WriteHeader(http.StatusBadRequest)
 		w.Write([]byte(r.Method))
@@ -162,7 +207,7 @@ func (s *AHL) Listen() net.Listener {
 		}
 
 	}()
-	return nil
+	return s
 }
 
 // ReadRemote ReadRemote
@@ -203,76 +248,84 @@ type connData struct {
 	err  error
 }
 
-func newAHlConn(addr model.ANetAddr) *ahlConn {
-	return &ahlConn{ReadChan: make(chan connData, 1),
-		WriteChan:  make(chan connData, 1),
-		close:      make(chan int8),
-		remoteAddr: addr}
+func newAHlConn(addr model.ANetAddr, l *AHL, id uint64) *ahlConn {
+	return &ahlConn{
+		ReadBuf:    make([]connData, 0),
+		WriteBuf:   make([]connData, 0),
+		remoteAddr: addr,
+		listenner:  l,
+		id:         id}
 }
 
 type ahlConn struct {
-	ReadChan   chan connData
-	WriteChan  chan connData
-	close      chan int8
+	id         uint64
+	ReadBuf    []connData
+	WriteBuf   []connData
+	ReadLock   sync.Mutex
+	WriteLock  sync.Mutex
+	closed     bool
 	remoteAddr model.ANetAddr
+	listenner  *AHL
 }
 
 func (c *ahlConn) Read(b []byte) (n int, err error) {
-	return readFromChan(c.ReadChan, c.close, b)
-	/*select {
-	case data := <-c.ReadChan:
-		copy(b, data.data)
-		return data.n, data.err
-	case <-time.After(time.Minute):
-		return 0, io.EOF
-	case <-c.close:
-		return 0, io.EOF
-	}*/
-}
-func (c *ahlConn) Write(b []byte) (n int, err error) {
-	return writeToChan(c.WriteChan, c.close, b)
-	/*data := connData{data: make([]byte, len(b)), n: len(b)}
-	copy(data.data, b)
-	select {
-	case c.WriteChan <- data:
-		return len(b), nil
-	case <-time.After(time.Minute):
-		return 0, io.EOF
-	case <-c.close:
-		return 0, io.EOF
-	}*/
+	return readTimeout(b, &c.ReadBuf, &c.closed, &c.ReadLock, time.Minute)
 }
 
-func readFromChan(c chan connData, close chan int8, b []byte) (n int, err error) {
-	select {
-	case data := <-c:
+func readTimeout(b []byte, readBuf *[]connData, closed *bool, lock *sync.Mutex, t time.Duration) (n int, err error) {
+	timeOut := time.Now().Add(t)
+	for time.Now().Before(timeOut) {
+		if len(*readBuf) == 0 && !*closed {
+			time.Sleep(t / 5)
+			continue
+		}
+		if *closed {
+			return 0, io.EOF
+		}
+		lock.Lock()
+		if len(*readBuf) == 0 {
+			lock.Unlock()
+			continue
+		}
+		data := (*readBuf)[0]
+		if len(b) < data.n {
+			copy(b, data.data[:len(b)])
+			data.data = data.data[len(b):]
+			data.n -= len(b)
+			(*readBuf)[0] = data
+			lock.Unlock()
+			return len(b), nil
+		}
 		copy(b, data.data)
+		*readBuf = (*readBuf)[1:]
+		lock.Unlock()
 		return data.n, data.err
-	case <-time.After(time.Minute):
-		return 0, io.EOF
-	case <-close:
-		return 0, io.EOF
 	}
+	return 0, tools.ErrTimeout
 }
 
-func writeToChan(c chan connData, close chan int8, b []byte) (n int, err error) {
+func (c *ahlConn) Write(b []byte) (n int, err error) {
+	if c.closed {
+		return 0, io.ErrUnexpectedEOF
+	}
 	data := connData{data: make([]byte, len(b)), n: len(b)}
 	copy(data.data, b)
-	select {
-	case c <- data:
-		return len(b), nil
-	case <-time.After(time.Minute):
-		return 0, io.EOF
-	case <-close:
-		return 0, io.EOF
-	}
+	c.WriteLock.Lock()
+	defer c.WriteLock.Unlock()
+	c.WriteBuf = append(c.WriteBuf, data)
+	log.Println(c.id, len(c.WriteBuf))
+	return len(b), nil
 }
 
 func (c *ahlConn) Close() error {
-	defer func() {
-		recover()
-	}()
-	close(c.close)
+	c.closed = true
+	if c.listenner != nil {
+		c.listenner.poolLock.Lock()
+		defer c.listenner.poolLock.Unlock()
+		delete(c.listenner.connPool, c.id)
+	}
+	c.ReadBuf = make([]connData, 0)
+	c.WriteBuf = make([]connData, 0)
 	return nil
 }
 func (c *ahlConn) LocalAddr() net.Addr {

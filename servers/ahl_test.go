@@ -3,7 +3,6 @@ package servers
 import (
 	"bytes"
 	"encoding/json"
-	"fmt"
 	"io/ioutil"
 	"net"
 	"net/http"
@@ -22,7 +21,7 @@ func Test_ahlserver(t *testing.T) {
 		if err != nil {
 			t.Error(err)
 		}
-		fmt.Println(ahl.ReadRemote(conn))
+		t.Log(ahl.ReadRemote(conn))
 		buf := tools.MemPool.Get(65536)
 		defer tools.MemPool.Put(buf)
 		n, err := conn.Read(buf)
@@ -30,13 +29,17 @@ func Test_ahlserver(t *testing.T) {
 			t.Error(err)
 			return
 		}
-		fmt.Println(string(buf[:n]))
+		t.Log(string(buf[:n]))
 		_, err = conn.Write([]byte("hello back"))
 		if err != nil {
 			t.Error(err)
 			return
 		}
-		fmt.Println("hello back")
+		_, err = conn.Write([]byte("hello back2"))
+		if err != nil {
+			t.Error(err)
+			return
+		}
 	}()
 	time.Sleep(time.Second)
 	targetAddr := model.ANetAddr{Host: "bilibili.network", Port: 443, Typ: model.TCP}
@@ -46,6 +49,7 @@ func Test_ahlserver(t *testing.T) {
 	client := &http.Client{}
 	resp, err := client.Do(req)
 	if err != nil {
+		t.Error(err)
 		return
 	}
 	defer resp.Body.Close()
@@ -62,7 +66,6 @@ func Test_ahlserver(t *testing.T) {
 		return
 	}
 	req.AddCookie(&http.Cookie{Name: "pw", Value: "123"})
-	client = &http.Client{}
 	resp2, err := client.Do(req)
 	if err != nil {
 		t.Error(err)
@@ -74,20 +77,45 @@ func Test_ahlserver(t *testing.T) {
 		t.Error(resp2.StatusCode)
 		return
 	}
-	b, _ = ioutil.ReadAll(resp2.Body)
-	t.Log(string(b))
+	b2, _ := ioutil.ReadAll(resp2.Body)
+	num := resp2.Header.Get("Num")
+	t.Log(num)
+	t.Log(string(b2))
+	for num != "0" {
+		req, err = http.NewRequest(http.MethodPost, "http://127.0.0.1:1928/test/"+string(b), nil)
+		if err != nil {
+			t.Error(err)
+			return
+		}
+		req.AddCookie(&http.Cookie{Name: "pw", Value: "123"})
+		resp3, err := client.Do(req)
+		if err != nil {
+			t.Error(err)
+			return
+		}
+		defer resp3.Body.Close()
+
+		if resp3.StatusCode != http.StatusOK && resp3.StatusCode != http.StatusAccepted {
+			t.Error(resp3.StatusCode)
+			return
+		}
+		b2, _ = ioutil.ReadAll(resp3.Body)
+		num = resp3.Header.Get("Num")
+		t.Log(num)
+		t.Log(string(b2))
+	}
 }
 
 func TestAhlConn(t *testing.T) {
-	c := &ahlConn{ReadChan: make(chan connData, 1), WriteChan: make(chan connData, 1), close: make(chan int8)}
+	c := &ahlConn{ReadBuf: make([]connData, 0), WriteBuf: make([]connData, 0)}
 	b := make([]byte, 65536)
 	copy(b, []byte("123"))
 	t.Log(len(b))
-	c.ReadChan <- connData{data: b, n: 3}
+	c.ReadBuf = append(c.ReadBuf, connData{data: b, n: 3})
 	buf := make([]byte, 65536)
 	n, _ := c.Read(buf)
 	t.Log(string(buf[:n]))
 	c.Write([]byte("123"))
-	d := <-c.WriteChan
+	d := c.WriteBuf[0]
 	t.Log(string(d.data[:d.n]))
 }
