@@ -67,7 +67,7 @@ func initConf() {
 }
 
 // GetConf GetConf
-func GetConf() model.Object {
+func GetConf() *model.Object {
 	if conf == nil {
 		lock.Lock()
 		if conf == nil {
@@ -75,5 +75,5 @@ func GetConf() model.Object {
 		}
 		lock.Unlock()
 	}
-	return *conf
+	return conf
 }

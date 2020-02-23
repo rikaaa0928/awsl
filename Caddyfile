@@ -1,9 +1,9 @@
-https://lo.bilibili.network:1443 {
+https://lo.bilibili.network:443 {
     tls self_signed
     log /awsl stdout
     errors stdout
-    proxy /awsl http://127.0.0.1:1928 {
+    proxy /awsl https://lo.bilibili.network:1443 {
         transparent
-        websocket
+        insecure_skip_verify
     }
 }

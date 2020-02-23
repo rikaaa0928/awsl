@@ -13,6 +13,8 @@ func NewClients(conf []model.Out) []Client {
 			r = append(r, NewAWSL(v.Awsl.Host, v.Awsl.Port, v.Awsl.URI, v.Awsl.Auth))
 		case "ahl":
 			r = append(r, NewAHL(v.Awsl.Host, v.Awsl.Port, v.Awsl.URI, v.Awsl.Auth))
+		case "h2c":
+			r = append(r, NewH2C(v.Awsl.Host, v.Awsl.Port, v.Awsl.URI, v.Awsl.Auth))
 		default:
 			panic(v.Type)
 		}
