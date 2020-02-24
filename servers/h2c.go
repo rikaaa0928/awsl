@@ -3,6 +3,7 @@ package servers
 import (
 	"encoding/json"
 	"errors"
+	"io"
 	"net"
 	"net/http"
 	"net/url"
@@ -36,19 +37,60 @@ type H2C struct {
 	Conns     chan net.Conn
 }
 
+type rewrite struct {
+	w http.ResponseWriter
+}
+
+func (w rewrite) Write(b []byte) (n int, err error) {
+	n, err = w.w.Write(b)
+	w.w.(http.Flusher).Flush()
+	return
+}
+
 func (s *H2C) serve(w http.ResponseWriter, r *http.Request) {
 	if r.Method != "PUT" {
-		http.Error(w, "PUT required.", 400)
+		http.Error(w, "PUT required.", http.StatusBadRequest)
 		return
 	}
+
+	addr := model.ANetAddr{}
+	addrCookie, err := r.Cookie("addr")
+	if err != nil {
+		http.Error(w, "address required.", http.StatusBadRequest)
+		return
+	}
+	addrStr, err := url.QueryUnescape(addrCookie.Value)
+	if err != nil {
+		http.Error(w, "address required.", http.StatusBadRequest)
+		return
+	}
+	err = json.Unmarshal([]byte(addrStr), &addr)
+	if err != nil {
+		http.Error(w, "address required.", http.StatusBadRequest)
+		return
+	}
+	pw, err := r.Cookie("pw")
+	if err != nil {
+		http.Error(w, "wtf?", http.StatusBadRequest)
+		return
+	}
+
 	if f, ok := w.(http.Flusher); ok {
 		f.Flush()
 	}
-	c := &h2cConn{w: w, r: r, closeChan: make(chan int8)}
+	wr, ww := io.Pipe()
+	rr, rw := io.Pipe()
+	defer func() {
+		wr.Close()
+		ww.Close()
+		rr.Close()
+		rw.Close()
+	}()
+	c := &h2cConn{w: ww, r: rr, Pw: pw.Value, Addr: addr}
 
 	s.Conns <- c
-
-	<-c.closeChan
+	go io.Copy(rewrite{w}, wr)
+	io.Copy(rw, r.Body)
 }
 
 // Listen Listen
@@ -82,27 +124,10 @@ func (s *H2C) Listen() net.Listener {
 // ReadRemote ReadRemote
 func (s *H2C) ReadRemote(c net.Conn) (model.ANetAddr, error) {
 	if ac, ok := c.(*h2cConn); ok {
-		addr := model.ANetAddr{}
-		addrCookie, err := ac.r.Cookie("addr")
-		if err != nil {
-			return addr, err
+		if ac.Pw != s.Auth {
+			return model.ANetAddr{}, errors.New("wtf")
 		}
-		addrStr, err := url.QueryUnescape(addrCookie.Value)
-		if err != nil {
-			return addr, err
-		}
-		err = json.Unmarshal([]byte(addrStr), &addr)
-		if err != nil {
-			return addr, err
-		}
-		pw, err := ac.r.Cookie("pw")
-		if err != nil {
-			return addr, err
-		}
-		if pw.Value != s.Auth {
-			return addr, errors.New("wtf")
-		}
-		return addr, nil
+		return ac.Addr, nil
 	}
 	return model.ANetAddr{}, errors.New("wrong conn type")
 }
@@ -135,27 +160,25 @@ func (s *H2C) Addr() net.Addr {
 }
 
 type h2cConn struct {
-	w         http.ResponseWriter
-	r         *http.Request
-	closeChan chan int8
+	w    io.WriteCloser
+	r    io.ReadCloser
+	Pw   string
+	Addr model.ANetAddr
 }
 
 func (c *h2cConn) Read(b []byte) (n int, err error) {
-	return c.r.Body.Read(b)
+	return c.r.Read(b)
 }
 
 func (c *h2cConn) Write(b []byte) (n int, err error) {
-	n, err = c.w.Write(b)
-	c.w.(http.Flusher).Flush()
-	return
+	//n, err = c.w.Write(b)
+	//c.w.(http.Flusher).Flush()
+	return c.w.Write(b)
 }
 
 func (c *h2cConn) Close() error {
-	defer func() {
-		recover()
-	}()
-	close(c.closeChan)
-	return c.r.Body.Close()
+	c.w.Close()
+	return c.r.Close()
 }
 func (c *h2cConn) LocalAddr() net.Addr {
 	return nil
