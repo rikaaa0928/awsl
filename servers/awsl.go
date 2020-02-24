@@ -153,7 +153,9 @@ type awslConn struct {
 }
 
 func (c *awslConn) Close() error {
-	defer recover()
+	defer func() {
+		recover()
+	}()
 	err := c.Conn.Close()
 	close(c.CloseChan)
 	return err
