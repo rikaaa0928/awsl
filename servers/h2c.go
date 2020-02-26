@@ -74,7 +74,7 @@ func (s *H2C) serve(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "wtf?", http.StatusBadRequest)
 		return
 	}
-
+	w.Header().Set("Content-Type", "application/octet-stream")
 	if f, ok := w.(http.Flusher); ok {
 		f.Flush()
 	}
