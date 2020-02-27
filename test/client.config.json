@@ -3,10 +3,10 @@
         {
             "type": "h2c",
             "awsl": {
-                "host": "lo.bilibili.network",
-                "port": "443",
-                "uri": "awsl",
-                "auth": "1234567890"
+                "host": "ss.bilibili.network",
+                "port": "8443",
+                "uri": "h2c",
+                "auth": "qweasdzxc"
             }
         }
     ],
