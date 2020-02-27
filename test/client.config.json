@@ -1,11 +1,11 @@
 {
     "outs": [
         {
-            "type": "awsl",
+            "type": "h2c",
             "awsl": {
                 "host": "lo.bilibili.network",
                 "port": "443",
-                "uri": "h2c",
+                "uri": "awsl",
                 "auth": "1234567890"
             }
         }
