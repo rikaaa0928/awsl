@@ -4,7 +4,7 @@
             "type": "h2c",
             "awsl": {
                 "host": "lo.bilibili.network",
-                "port": "1443",
+                "port": "443",
                 "uri": "awsl",
                 "auth": "1234567890"
             }
