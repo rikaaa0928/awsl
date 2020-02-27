@@ -3,7 +3,6 @@ package servers
 import (
 	"encoding/json"
 	"errors"
-	"fmt"
 	"io"
 	"net"
 	"net/http"
@@ -49,7 +48,6 @@ func (w rewrite) Write(b []byte) (n int, err error) {
 }
 
 func (s *H2C) serve(w http.ResponseWriter, r *http.Request) {
-	fmt.Println("income", r.Method)
 	if r.Method != "PUT" {
 		http.Error(w, "PUT required.", http.StatusBadRequest)
 		return
@@ -80,7 +78,6 @@ func (s *H2C) serve(w http.ResponseWriter, r *http.Request) {
 	if f, ok := w.(http.Flusher); ok {
 		f.Flush()
 	}
-	fmt.Println("flushed")
 	wr, ww := io.Pipe()
 	rr, rw := io.Pipe()
 	defer func() {
