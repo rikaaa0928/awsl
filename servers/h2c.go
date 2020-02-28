@@ -75,9 +75,12 @@ func (s *H2C) serve(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	w.Header().Set("Content-Type", "application/octet-stream")
-	if f, ok := w.(http.Flusher); ok {
-		f.Flush()
+	f, ok := w.(http.Flusher)
+	if !ok {
+		http.Error(w, "flush required.", http.StatusHTTPVersionNotSupported)
+		return
 	}
+	f.Flush()
 	wr, ww := io.Pipe()
 	rr, rw := io.Pipe()
 	defer func() {

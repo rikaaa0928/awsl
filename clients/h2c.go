@@ -19,6 +19,7 @@ import (
 // NewH2C NewH2C
 func NewH2C(serverHost, serverPort, uri, auth string) *H2C {
 	http.DefaultTransport.(*http.Transport).TLSClientConfig = &tls.Config{InsecureSkipVerify: config.GetConf().NoVerify}
+	http.DefaultTransport.(*http.Transport).Proxy = nil
 	return &H2C{
 		ServerHost: serverHost,
 		ServerPort: serverPort,
@@ -37,7 +38,7 @@ type H2C struct {
 // Dial Dial
 func (c *H2C) Dial(addr model.ANetAddr) (net.Conn, error) {
 	pr, pw := io.Pipe()
-	req, err := http.NewRequest(http.MethodPut, "https://"+c.ServerHost+":"+c.ServerPort+"/"+c.URI+"/", ioutil.NopCloser(pr))
+	req, err := http.NewRequest(http.MethodGet, "https://"+c.ServerHost+":"+c.ServerPort+"/"+c.URI+"/", ioutil.NopCloser(pr))
 	if err != nil {
 		return nil, err
 	}
@@ -48,9 +49,7 @@ func (c *H2C) Dial(addr model.ANetAddr) (net.Conn, error) {
 	req.AddCookie(c.Auth)
 	req.AddCookie(&http.Cookie{Name: "addr", Value: url.QueryEscape(string(addrBytes))})
 	// Send the request
-
 	resp, err := http.DefaultClient.Do(req)
-
 	if err != nil {
 		return nil, err
 	}

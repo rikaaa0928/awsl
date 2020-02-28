@@ -22,6 +22,9 @@ var Debug bool
 // UDP useudp
 var UDP bool
 
+// ConfigFile cf
+var ConfigFile string
+
 func initConf() {
 	configFile := flag.String("c", "/etc/awsl/config.json", "path to config file")
 	debug := flag.Bool("d", false, "debug")
@@ -40,6 +43,7 @@ func initConf() {
 	if err != nil {
 		panic(err)
 	}
+	ConfigFile = *configFile
 	if conf.BufSize == 0 {
 		conf.BufSize = 32
 	}
