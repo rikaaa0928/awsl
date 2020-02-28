@@ -17,15 +17,11 @@ import (
 // NewAWSL NewAWSL
 func NewAWSL(listenHost, listenPort, uri, auth, key, cert string, connsSize int) *AWSL {
 	a := &AWSL{
-		IP:   listenHost,
-		Port: listenPort,
-		URI:  uri,
-		Auth: auth,
-		Listener: &AWSListener{
-			Conns: make(chan net.Conn, connsSize),
-			IP:    listenHost,
-			Port:  listenPort,
-		},
+		IP:      listenHost,
+		Port:    listenPort,
+		URI:     uri,
+		Auth:    auth,
+		Conns:   make(chan net.Conn, connsSize),
 		Cert:    cert,
 		Key:     key,
 		ConnNum: make(chan int, 1),
@@ -36,15 +32,16 @@ func NewAWSL(listenHost, listenPort, uri, auth, key, cert string, connsSize int)
 
 // AWSL AWSL
 type AWSL struct {
-	IP       string
-	Port     string
-	URI      string
-	Auth     string
-	Listener *AWSListener
-	Cert     string
-	Key      string
-	ConnNum  chan int
-	Max      int
+	IP   string
+	Port string
+	URI  string
+	Auth string
+	// Listener *AWSListener
+	Cert    string
+	Key     string
+	ConnNum chan int
+	Max     int
+	Conns   chan net.Conn
 }
 
 func (s *AWSL) awslHandler(conn *websocket.Conn) {
@@ -52,7 +49,7 @@ func (s *AWSL) awslHandler(conn *websocket.Conn) {
 		Conn:      conn,
 		CloseChan: make(chan int8),
 	}
-	s.Listener.Conns <- ac
+	s.Conns <- ac
 	if config.Debug {
 		num := <-s.ConnNum
 		num++
@@ -97,7 +94,7 @@ func (s *AWSL) Listen() net.Listener {
 		}
 
 	}()
-	return s.Listener
+	return s
 }
 
 // ReadRemote server
@@ -122,27 +119,27 @@ func (s *AWSL) ReadRemote(c net.Conn) (model.ANetAddr, error) {
 }
 
 // AWSListener listener
-type AWSListener struct {
+/*type AWSListener struct {
 	Conns chan net.Conn
 	IP    string
 	Port  string
-}
+}*/
 
 // Accept Accept
-func (l *AWSListener) Accept() (net.Conn, error) {
-	c := <-l.Conns
+func (s *AWSL) Accept() (net.Conn, error) {
+	c := <-s.Conns
 	return c, nil
 }
 
 // Close Close
-func (l *AWSListener) Close() error {
+func (s *AWSL) Close() error {
 	return nil
 }
 
 // Addr Addr
-func (l *AWSListener) Addr() net.Addr {
+func (s *AWSL) Addr() net.Addr {
 	return &net.IPAddr{
-		IP:   net.ParseIP(l.IP),
+		IP:   net.ParseIP(s.IP),
 		Zone: "",
 	}
 }

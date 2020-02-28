@@ -15,13 +15,10 @@ import (
 // NewHTTP NewHTTP
 func NewHTTP(listenHost, listenPort string, connsSize int) *HTTPServer {
 	a := &HTTPServer{
-		IP:   listenHost,
-		Port: listenPort,
-		Listener: &AWSListener{
-			Conns: make(chan net.Conn, connsSize),
-			IP:    listenHost,
-			Port:  listenPort,
-		},
+		IP:    listenHost,
+		Port:  listenPort,
+		Conns: make(chan net.Conn, connsSize),
+
 		ConnNum: make(chan int, 1),
 	}
 	a.ConnNum <- 0
@@ -30,11 +27,11 @@ func NewHTTP(listenHost, listenPort string, connsSize int) *HTTPServer {
 
 // HTTPServer HTTPServer
 type HTTPServer struct {
-	IP       string
-	Port     string
-	Listener *AWSListener
-	ConnNum  chan int
-	Max      int
+	IP      string
+	Port    string
+	Conns   chan net.Conn
+	ConnNum chan int
+	Max     int
 }
 
 // Listen server
@@ -73,7 +70,7 @@ func (s *HTTPServer) Listen() net.Listener {
 				addr := model.ANetAddr{Host: sl[0], Port: port}
 
 				con := &httpConn{Conn: clientConn, CloseChan: make(chan int8), addr: addr}
-				s.Listener.Conns <- con
+				s.Conns <- con
 
 				if config.Debug {
 					num := <-s.ConnNum
@@ -104,7 +101,7 @@ func (s *HTTPServer) Listen() net.Listener {
 		}),
 	}
 	go server.ListenAndServe()
-	return s.Listener
+	return s
 }
 
 // ReadRemote server
@@ -114,6 +111,25 @@ func (s *HTTPServer) ReadRemote(c net.Conn) (model.ANetAddr, error) {
 		return model.ANetAddr{}, errors.New("conn not httpConn")
 	}
 	return conn.addr, nil
+}
+
+// Accept Accept
+func (s *HTTPServer) Accept() (net.Conn, error) {
+	c := <-s.Conns
+	return c, nil
+}
+
+// Close Close
+func (s *HTTPServer) Close() error {
+	return nil
+}
+
+// Addr Addr
+func (s *HTTPServer) Addr() net.Addr {
+	return &net.IPAddr{
+		IP:   net.ParseIP(s.IP),
+		Zone: "",
+	}
 }
 
 type httpConn struct {
