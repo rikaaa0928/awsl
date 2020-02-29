@@ -1,8 +1,10 @@
 package object
 
 import (
+	"io"
 	"log"
 	"net"
+	"net/http"
 	"strconv"
 	"sync"
 
@@ -86,8 +88,25 @@ func (o *DefaultObject) handelOneClient(i int) {
 					c.Close()
 					return
 				}
-				go tools.PipeThenClose(m.c, c)
-				tools.PipeThenClose(c, m.c)
+				if hc, ok := m.c.(*servers.HTTPGetConn); ok {
+					trans := http.Transport{Dial: func(network, addr string) (net.Conn, error) {
+						return c, nil
+					}}
+					resp, err := trans.RoundTrip(hc.R)
+					if err != nil {
+						http.Error(hc.W, err.Error(), http.StatusServiceUnavailable)
+						return
+					}
+					defer resp.Body.Close()
+					tools.CopyHeader(hc.W.Header(), resp.Header)
+					hc.W.WriteHeader(resp.StatusCode)
+					io.Copy(hc.W, resp.Body)
+					hc.Close()
+				} else {
+					go tools.PipeThenClose(m.c, c)
+					tools.PipeThenClose(c, m.c)
+				}
+
 			}()
 		case <-o.CloseChan:
 			o.stop = true

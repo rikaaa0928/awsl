@@ -19,7 +19,7 @@ windows10可使用wsl
 1. 创建wsl_run.sh
 ```
 #!/bin/bash
-# service privoxy start >/dev/null 2>&1    # 可使用privoxy完成http -> socks5
+# service privoxy start >/dev/null 2>&1    # 可使用privoxy完成http -> socks5 目前已支持http
 $GOPATH/bin/awsl > $logfile 2>&1
 ```
 2. `chmod +x wsl_run.sh`

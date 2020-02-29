@@ -25,7 +25,8 @@ var UDP bool
 // ConfigFile cf
 var ConfigFile string
 
-func initConf() {
+// InitConf InitConf
+func InitConf() {
 	configFile := flag.String("c", "/etc/awsl/config.json", "path to config file")
 	debug := flag.Bool("d", false, "debug")
 	udp := flag.Bool("u", false, "udp")
@@ -75,7 +76,7 @@ func GetConf() *model.Object {
 	if conf == nil {
 		lock.Lock()
 		if conf == nil {
-			initConf()
+			InitConf()
 		}
 		lock.Unlock()
 	}

@@ -15,6 +15,14 @@
             "type": "socks",
             "host": "127.0.0.1",
             "port": "1928"
+        },
+        {
+            "type": "http",
+            "host": "127.0.0.1",
+            "port": "8118",
+            "http": {
+                "chan": 32
+            }
         }
     ],
     "bufSize": 32

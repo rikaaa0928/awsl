@@ -38,7 +38,7 @@ type H2C struct {
 // Dial Dial
 func (c *H2C) Dial(addr model.ANetAddr) (net.Conn, error) {
 	pr, pw := io.Pipe()
-	req, err := http.NewRequest(http.MethodGet, "https://"+c.ServerHost+":"+c.ServerPort+"/"+c.URI+"/", ioutil.NopCloser(pr))
+	req, err := http.NewRequest(http.MethodPut, "https://"+c.ServerHost+":"+c.ServerPort+"/"+c.URI+"/", ioutil.NopCloser(pr))
 	if err != nil {
 		return nil, err
 	}
@@ -54,7 +54,8 @@ func (c *H2C) Dial(addr model.ANetAddr) (net.Conn, error) {
 		return nil, err
 	}
 	if resp.StatusCode != http.StatusOK {
-		return nil, errors.New(strconv.Itoa(resp.StatusCode))
+		b, _ := ioutil.ReadAll(resp.Body)
+		return nil, errors.New(strconv.Itoa(resp.StatusCode) + string(b))
 	}
 	return &h2cConn{w: pw, r: resp.Body}, nil
 }
