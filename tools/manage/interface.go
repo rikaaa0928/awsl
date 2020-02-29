@@ -7,4 +7,5 @@ import (
 // ObjectManager ObjectManager
 type ObjectManager interface {
 	RunObject(object.Object)
+	Restart()
 }

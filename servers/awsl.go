@@ -1,6 +1,7 @@
 package servers
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"log"
@@ -17,14 +18,15 @@ import (
 // NewAWSL NewAWSL
 func NewAWSL(listenHost, listenPort, uri, auth, key, cert string, connsSize int) *AWSL {
 	a := &AWSL{
-		IP:      listenHost,
-		Port:    listenPort,
-		URI:     uri,
-		Auth:    auth,
-		Conns:   make(chan net.Conn, connsSize),
-		Cert:    cert,
-		Key:     key,
-		ConnNum: make(chan int, 1),
+		IP:        listenHost,
+		Port:      listenPort,
+		URI:       uri,
+		Auth:      auth,
+		Conns:     make(chan net.Conn, connsSize),
+		Cert:      cert,
+		Key:       key,
+		ConnNum:   make(chan int, 1),
+		CloseChan: make(chan int8),
 	}
 	a.ConnNum <- 0
 	return a
@@ -37,11 +39,13 @@ type AWSL struct {
 	URI  string
 	Auth string
 	// Listener *AWSListener
-	Cert    string
-	Key     string
-	ConnNum chan int
-	Max     int
-	Conns   chan net.Conn
+	Cert      string
+	Key       string
+	ConnNum   chan int
+	Max       int
+	Conns     chan net.Conn
+	Srv       http.Server
+	CloseChan chan int8
 }
 
 func (s *AWSL) awslHandler(conn *websocket.Conn) {
@@ -80,14 +84,17 @@ func (s *AWSL) Listen() net.Listener {
 	mux := http.NewServeMux()
 	mux.Handle("/"+s.URI, websocket.Handler(s.awslHandler))
 	//http.Handle("/"+s.URI, websocket.Handler(s.awslHandler))
+	s.Srv = http.Server{Addr: s.IP + ":" + s.Port, Handler: mux}
 	go func() {
 		if len(s.Cert) == 0 || len(s.Key) == 0 {
-			err := http.ListenAndServe(s.IP+":"+s.Port, mux)
+			//err := http.ListenAndServe(s.IP+":"+s.Port, mux)
+			err := s.Srv.ListenAndServe()
 			if err != nil {
 				panic("ListenAndServe: " + err.Error())
 			}
 		} else {
-			err := http.ListenAndServeTLS(s.IP+":"+s.Port, s.Cert, s.Key, mux)
+			//err := http.ListenAndServeTLS(s.IP+":"+s.Port, s.Cert, s.Key, mux)
+			err := s.Srv.ListenAndServeTLS(s.Cert, s.Key)
 			if err != nil {
 				panic("ListenAndServe: " + err.Error())
 			}
@@ -127,13 +134,21 @@ func (s *AWSL) ReadRemote(c net.Conn) (model.ANetAddr, error) {
 
 // Accept Accept
 func (s *AWSL) Accept() (net.Conn, error) {
-	c := <-s.Conns
-	return c, nil
+	select {
+	case c := <-s.Conns:
+		return c, nil
+	case <-s.CloseChan:
+		return nil, errors.New("listenner closed")
+	}
 }
 
 // Close Close
 func (s *AWSL) Close() error {
-	return nil
+	defer func() {
+		recover()
+	}()
+	close(s.CloseChan)
+	return s.Srv.Shutdown(context.Background())
 }
 
 // Addr Addr

@@ -1,6 +1,7 @@
 package servers
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"io"
@@ -45,6 +46,7 @@ type AHL struct {
 	id        uint64
 	Conns     chan net.Conn
 	CloseChan chan int8
+	Srv       http.Server
 }
 
 func (s *AHL) serve(w http.ResponseWriter, r *http.Request) {
@@ -193,14 +195,17 @@ func (s *AHL) Listen() net.Listener {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/"+s.URI, s.serve)
 	//http.HandleFunc("/"+s.URI, s.serve)
+	s.Srv = http.Server{Addr: s.IP + ":" + s.Port, Handler: mux}
 	go func() {
 		if len(s.Cert) == 0 || len(s.Key) == 0 {
-			err := http.ListenAndServe(s.IP+":"+s.Port, mux)
+			//err := http.ListenAndServe(s.IP+":"+s.Port, mux)
+			err := s.Srv.ListenAndServe()
 			if err != nil {
 				panic("ListenAndServe: " + err.Error())
 			}
 		} else {
-			err := http.ListenAndServeTLS(s.IP+":"+s.Port, s.Cert, s.Key, mux)
+			//err := http.ListenAndServeTLS(s.IP+":"+s.Port, s.Cert, s.Key, mux)
+			err := s.Srv.ListenAndServeTLS(s.Cert, s.Key)
 			if err != nil {
 				panic("ListenAndServe: " + err.Error())
 			}
@@ -230,8 +235,11 @@ func (s *AHL) Accept() (net.Conn, error) {
 
 // Close Close
 func (s *AHL) Close() error {
-	s.CloseChan <- 1
-	return nil
+	defer func() {
+		recover()
+	}()
+	close(s.CloseChan)
+	return s.Srv.Shutdown(context.Background())
 }
 
 // Addr Addr

@@ -1,6 +1,7 @@
 package servers
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"io"
@@ -35,6 +36,7 @@ type H2C struct {
 	Key       string
 	CloseChan chan int8
 	Conns     chan net.Conn
+	Srv       http.Server
 }
 
 type rewrite struct {
@@ -100,6 +102,7 @@ func (s *H2C) serve(w http.ResponseWriter, r *http.Request) {
 func (s *H2C) Listen() net.Listener {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/"+s.URI, s.serve)
+	s.Srv = http.Server{Addr: s.IP + ":" + s.Port, Handler: mux}
 	/*var srv http.Server
 	srv.Handler = mux
 	srv.Addr = s.IP + ":" + s.Port
@@ -108,14 +111,14 @@ func (s *H2C) Listen() net.Listener {
 	//http.HandleFunc("/"+s.URI, s.serve)
 	go func() {
 		if len(s.Cert) == 0 || len(s.Key) == 0 {
-			//err := srv.ListenAndServe()
-			err := http.ListenAndServe(s.IP+":"+s.Port, mux)
+			err := s.Srv.ListenAndServe()
+			//err := http.ListenAndServe(s.IP+":"+s.Port, mux)
 			if err != nil {
 				panic("ListenAndServe: " + err.Error())
 			}
 		} else {
-			//err := srv.ListenAndServeTLS(s.Cert, s.Key)
-			err := http.ListenAndServeTLS(s.IP+":"+s.Port, s.Cert, s.Key, mux)
+			err := s.Srv.ListenAndServeTLS(s.Cert, s.Key)
+			//err := http.ListenAndServeTLS(s.IP+":"+s.Port, s.Cert, s.Key, mux)
 			if err != nil {
 				panic("ListenAndServe: " + err.Error())
 			}
@@ -151,7 +154,7 @@ func (s *H2C) Close() error {
 		recover()
 	}()
 	close(s.CloseChan)
-	return nil
+	return s.Srv.Shutdown(context.Background())
 }
 
 // Addr Addr

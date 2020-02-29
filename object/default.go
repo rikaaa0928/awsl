@@ -21,23 +21,23 @@ func NewDefault(cs []clients.Client, ss []servers.Server) *DefaultObject {
 		m[i] = make(chan DefaultRemoteMsg, config.GetConf().BufSize)
 	}
 	return &DefaultObject{
-		C:     cs,
-		S:     ss,
-		R:     router.ARouter{},
-		Msg:   m,
-		Close: make(chan int8),
-		stop:  false,
+		C:         cs,
+		S:         ss,
+		R:         router.ARouter{},
+		Msg:       m,
+		CloseChan: make(chan int8),
+		stop:      false,
 	}
 }
 
 // DefaultObject default
 type DefaultObject struct {
-	C     []clients.Client
-	S     []servers.Server
-	R     router.Router
-	Msg   []chan DefaultRemoteMsg
-	Close chan int8
-	stop  bool
+	C         []clients.Client
+	S         []servers.Server
+	R         router.Router
+	Msg       []chan DefaultRemoteMsg
+	CloseChan chan int8
+	stop      bool
 }
 
 // DefaultRemoteMsg DEFAULT
@@ -55,8 +55,11 @@ func (o *DefaultObject) Run() {
 
 // Stop object
 func (o *DefaultObject) Stop() {
+	defer func() {
+		recover()
+	}()
 	o.stop = true
-	o.Close <- 0
+	close(o.CloseChan)
 }
 
 func (o *DefaultObject) handelClient() {
@@ -86,7 +89,7 @@ func (o *DefaultObject) handelOneClient(i int) {
 				go tools.PipeThenClose(m.c, c)
 				tools.PipeThenClose(c, m.c)
 			}()
-		case <-o.Close:
+		case <-o.CloseChan:
 			o.stop = true
 		}
 	}
@@ -129,5 +132,6 @@ func (o *DefaultObject) handelOneServer(i int, w *sync.WaitGroup) {
 			o.Msg[r] <- DefaultRemoteMsg{c: c, a: addr, r: r}
 		}()
 	}
+	l.Close()
 	w.Done()
 }
