@@ -14,12 +14,22 @@ import (
 
 	"github.com/Evi1/awsl/config"
 	"github.com/Evi1/awsl/model"
+	"github.com/Evi1/awsl/tools/dialer"
 )
 
 // NewH2C NewH2C
-func NewH2C(serverHost, serverPort, uri, auth string) *H2C {
+func NewH2C(serverHost, serverPort, uri, auth string, backup []string) *H2C {
+	m := make(map[string][]string)
+	hp := net.JoinHostPort(serverHost, serverPort)
+	m[hp] = []string{hp}
+	if backup != nil {
+		m[hp] = append(m[hp], backup...)
+	}
+	d := &dialer.MultiAddr{Hosts: m, HostInUse: make(map[string]uint)}
 	http.DefaultTransport.(*http.Transport).TLSClientConfig = &tls.Config{InsecureSkipVerify: config.GetConf().NoVerify}
 	http.DefaultTransport.(*http.Transport).Proxy = nil
+	http.DefaultTransport.(*http.Transport).DialContext = nil
+	http.DefaultTransport.(*http.Transport).Dial = d.Dial
 	return &H2C{
 		ServerHost: serverHost,
 		ServerPort: serverPort,

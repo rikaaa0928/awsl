@@ -3,11 +3,23 @@
         {
             "host": "0.0.0.0",
             "port": "1443",
-            "type": "h2c",
+            "type": "awsl",
             "awsl": {
                 "key": "./test/server.key",
                 "cert": "./test/server.crt",
                 "uri": "awsl",
+                "chan": 32,
+                "auth": "1234567890"
+            }
+        },
+        {
+            "host": "0.0.0.0",
+            "port": "1444",
+            "type": "h2c",
+            "awsl": {
+                "key": "./test/server.key",
+                "cert": "./test/server.crt",
+                "uri": "h2c",
                 "chan": 32,
                 "auth": "1234567890"
             }

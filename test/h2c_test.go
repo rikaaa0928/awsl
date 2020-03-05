@@ -39,7 +39,7 @@ func TestH2C(t *testing.T) {
 		}
 	}()
 	fmt.Println("start client")
-	client := clients.NewH2C("lo.bilibili.network", "1928", "h2c", "123")
+	client := clients.NewH2C("lo.bilibili.network", "1928", "h2c", "123", nil)
 	conn, err := client.Dial(model.ANetAddr{Host: "www.bilibili.network", Port: 443, Typ: model.IPV4ADDR})
 	fmt.Println(err)
 	if err != nil {

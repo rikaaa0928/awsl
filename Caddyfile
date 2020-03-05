@@ -1,8 +1,8 @@
 https://lo.bilibili.network:443 {
     tls self_signed
-    log /awsl stdout
+    log /h2c stdout
     errors stdout
-    proxy /awsl https://lo.bilibili.network:1443 {
+    proxy /h2c https://lo.bilibili.network:1444 {
         transparent
         insecure_skip_verify
     }

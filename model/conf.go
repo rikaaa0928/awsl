@@ -16,10 +16,11 @@ type AwslIn struct {
 
 // AwslOut awsl
 type AwslOut struct {
-	Host string
-	Port string
-	URI  string
-	Auth string
+	Host   string
+	Port   string
+	URI    string
+	Auth   string
+	BackUp []string
 }
 
 // In in

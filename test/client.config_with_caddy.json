@@ -5,7 +5,7 @@
             "awsl": {
                 "host": "lo.bilibili.network",
                 "port": "443",
-                "uri": "awsl",
+                "uri": "h2c",
                 "auth": "1234567890"
             }
         }
