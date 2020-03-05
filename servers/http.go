@@ -94,7 +94,7 @@ func (s *HTTPServer) Listen() net.Listener {
 					s.ConnNum <- num
 				}
 
-			} else if r.Method == http.MethodGet {
+			} else {
 				rHost := ""
 				rPort := 80
 				var err error
@@ -196,10 +196,6 @@ func (s *HTTPServer) Listen() net.Listener {
 					}
 					s.ConnNum <- num
 				}*/
-			} else {
-				log.Println(r.Host)
-				w.WriteHeader(http.StatusBadRequest)
-				return
 			}
 		}),
 	}

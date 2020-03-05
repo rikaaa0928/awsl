@@ -80,7 +80,6 @@ func (s *AWSL) awslHandler(conn *websocket.Conn) {
 
 // Listen server
 func (s *AWSL) Listen() net.Listener {
-	log.Println(s.IP+":"+s.Port, s.Cert, s.Key)
 	mux := http.NewServeMux()
 	mux.Handle("/"+s.URI, websocket.Handler(s.awslHandler))
 	//http.Handle("/"+s.URI, websocket.Handler(s.awslHandler))
