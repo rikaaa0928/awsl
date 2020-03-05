@@ -30,7 +30,6 @@ type SockeServer struct {
 
 // Listen server
 func (s SockeServer) Listen() net.Listener {
-	log.Println(s.IP + ":" + s.Port)
 	l, e := net.Listen("tcp", s.IP+":"+s.Port)
 	if e != nil {
 		panic(e)
