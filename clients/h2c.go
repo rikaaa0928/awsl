@@ -25,16 +25,24 @@ func NewH2C(serverHost, serverPort, uri, auth string, backup []string) *H2C {
 	if backup != nil {
 		m[hp] = append(m[hp], backup...)
 	}
+	c := &http.Client{}
 	d := &dialer.MultiAddr{Hosts: m, HostInUse: make(map[string]uint)}
-	http.DefaultTransport.(*http.Transport).TLSClientConfig = &tls.Config{InsecureSkipVerify: config.GetConf().NoVerify}
+	trans := http.DefaultTransport
+	trans.(*http.Transport).TLSClientConfig = &tls.Config{InsecureSkipVerify: config.GetConf().NoVerify}
+	trans.(*http.Transport).Proxy = nil
+	trans.(*http.Transport).DialContext = nil
+	trans.(*http.Transport).Dial = d.Dial
+	c.Transport = trans
+	/*http.DefaultTransport.(*http.Transport).TLSClientConfig = &tls.Config{InsecureSkipVerify: config.GetConf().NoVerify}
 	http.DefaultTransport.(*http.Transport).Proxy = nil
 	http.DefaultTransport.(*http.Transport).DialContext = nil
-	http.DefaultTransport.(*http.Transport).Dial = d.Dial
+	http.DefaultTransport.(*http.Transport).Dial = d.Dial*/
 	return &H2C{
 		ServerHost: serverHost,
 		ServerPort: serverPort,
 		URI:        uri,
-		Auth:       &http.Cookie{Name: "pw", Value: auth}}
+		Auth:       &http.Cookie{Name: "pw", Value: auth},
+		Client:     c}
 }
 
 // H2C H2C
@@ -43,6 +51,7 @@ type H2C struct {
 	ServerPort string
 	URI        string
 	Auth       *http.Cookie
+	Client     *http.Client
 }
 
 // Dial Dial
@@ -59,7 +68,8 @@ func (c *H2C) Dial(addr model.ANetAddr) (net.Conn, error) {
 	req.AddCookie(c.Auth)
 	req.AddCookie(&http.Cookie{Name: "addr", Value: url.QueryEscape(string(addrBytes))})
 	// Send the request
-	resp, err := http.DefaultClient.Do(req)
+	//resp, err := http.DefaultClient.Do(req)
+	resp, err := c.Client.Do(req)
 	if err != nil {
 		return nil, err
 	}

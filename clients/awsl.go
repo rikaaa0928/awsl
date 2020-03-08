@@ -55,7 +55,7 @@ type AWSL struct {
 func (c *AWSL) Dial(addr model.ANetAddr) (net.Conn, error) {
 	bc, err := c.mDialer.Dial("tcp", net.JoinHostPort(c.ServerHost, c.ServerPort))
 	if err != nil {
-		log.Println("dial", err)
+		log.Println("awsl client dial", err)
 		return nil, err
 	}
 	tc := tls.Client(bc, &tls.Config{
@@ -64,7 +64,7 @@ func (c *AWSL) Dial(addr model.ANetAddr) (net.Conn, error) {
 	})
 	ws, err := websocket.NewClient(c.wsConfig, tc)
 	if err != nil {
-		log.Println("client", err)
+		log.Println("awsl client new client", err)
 		return nil, err
 	}
 	/*ws, err := websocket.DialConfig(wsConfig)
