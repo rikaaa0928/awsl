@@ -27,16 +27,17 @@ func NewH2C(serverHost, serverPort, uri, auth string, backup []string) *H2C {
 	}
 	c := &http.Client{}
 	d := &dialer.MultiAddr{Hosts: m, HostInUse: make(map[string]uint)}
-	trans := http.DefaultTransport
-	trans.(*http.Transport).TLSClientConfig = &tls.Config{InsecureSkipVerify: config.GetConf().NoVerify}
-	trans.(*http.Transport).Proxy = nil
-	trans.(*http.Transport).DialContext = nil
-	trans.(*http.Transport).Dial = d.Dial
+	trans := &http.Transport{
+		Proxy:                 nil,
+		Dial:                  d.Dial,
+		ForceAttemptHTTP2:     true,
+		MaxIdleConns:          100,
+		IdleConnTimeout:       90 * time.Second,
+		TLSHandshakeTimeout:   10 * time.Second,
+		ExpectContinueTimeout: 1 * time.Second,
+		TLSClientConfig:       &tls.Config{InsecureSkipVerify: config.GetConf().NoVerify},
+	}
 	c.Transport = trans
-	/*http.DefaultTransport.(*http.Transport).TLSClientConfig = &tls.Config{InsecureSkipVerify: config.GetConf().NoVerify}
-	http.DefaultTransport.(*http.Transport).Proxy = nil
-	http.DefaultTransport.(*http.Transport).DialContext = nil
-	http.DefaultTransport.(*http.Transport).Dial = d.Dial*/
 	return &H2C{
 		ServerHost: serverHost,
 		ServerPort: serverPort,
