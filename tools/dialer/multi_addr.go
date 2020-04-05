@@ -3,12 +3,14 @@ package dialer
 import (
 	"log"
 	"net"
+	"sync"
 )
 
 // MultiAddr MultiAddr
 type MultiAddr struct {
 	Hosts     map[string][]string
 	HostInUse map[string]uint
+	lock      sync.Mutex
 }
 
 // Dial Dial
@@ -23,6 +25,8 @@ func (d *MultiAddr) Dial(network, addr string) (net.Conn, error) {
 		log.Println("addr not in map", addr)
 		return net.Dial(network, addr)
 	}
+	d.lock.Lock()
+	defer d.lock.Unlock()
 	hostID, ok := d.HostInUse[host]
 	if !ok {
 		hostID = 0
