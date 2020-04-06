@@ -38,7 +38,9 @@ func (d *MultiAddr) Dial(network, addr string) (net.Conn, error) {
 	if err != nil {
 		d.lock.Lock()
 		defer d.lock.Unlock()
-		d.HostInUse[host]++
+		if hostID == d.HostInUse[host] {
+			d.HostInUse[host]++
+		}
 		if int(d.HostInUse[host]) >= len(hostList) {
 			d.HostInUse[host] = 0
 		}
