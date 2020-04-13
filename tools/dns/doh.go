@@ -4,9 +4,11 @@ import (
 	"encoding/json"
 	"errors"
 	"io/ioutil"
+	"net"
 	"net/http"
 	"strconv"
 	"sync"
+	"time"
 )
 
 // DoH DoH
@@ -56,12 +58,25 @@ func (d DoH) Resolve(host string) (Result, error) {
 }
 
 func resolve(url, host, t string) (string, error) {
+	c := http.Client{}
+	c.Transport = &http.Transport{
+		DialContext: (&net.Dialer{
+			Timeout:   30 * time.Second,
+			KeepAlive: 30 * time.Second,
+			DualStack: true,
+		}).DialContext,
+		ForceAttemptHTTP2:     true,
+		MaxIdleConns:          100,
+		IdleConnTimeout:       90 * time.Second,
+		TLSHandshakeTimeout:   10 * time.Second,
+		ExpectContinueTimeout: 1 * time.Second,
+	}
 	req, err := http.NewRequest("GET", url+"?name="+host+"&type="+t, nil)
 	if err != nil {
 		return "", err
 	}
 	req.Header.Add("accept", "application/dns-json")
-	resp, err := http.DefaultClient.Do(req)
+	resp, err := c.Do(req)
 	if err != nil {
 		return "", err
 	}

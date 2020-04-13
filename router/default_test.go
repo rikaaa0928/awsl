@@ -46,6 +46,8 @@ func Test_R(t *testing.T) {
 	}
 	//t.Log(confStr,conf)
 	r := NewDefaultRouter(conf)
-	t.Log(r.Route(0, model.ANetAddr{Host: "4.bilibili.network", Typ: 1}))
-	t.Log(r.Route(0, model.ANetAddr{Host: "39.156.66.18", Typ: 4}))
+	t.Log(r.Resolver.Resolve("pan.baidu.com"))
+	t.Log(r.Resolver.Resolve("jd.com"))
+	t.Log(r.Route(0, model.ANetAddr{Host: "jd.com", Typ: 1}))
+	t.Log(r.Route(0, model.ANetAddr{Host: "pan.baidu.com", Typ: 1}))
 }

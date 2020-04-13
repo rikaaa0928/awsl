@@ -94,7 +94,7 @@ func (r ARouter) Route(src int, addr model.ANetAddr) int {
 		return 0
 	}
 	rules, ok := r.RulesForIn[inTag]
-	if !ok {
+	if !ok || len(rules) == 0 {
 		return 0
 	}
 	for _, v := range rules {
