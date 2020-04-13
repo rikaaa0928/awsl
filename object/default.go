@@ -17,7 +17,7 @@ import (
 )
 
 // NewDefault NewDefault
-func NewDefault(cs []clients.Client, ss []servers.Server) *DefaultObject {
+func NewDefault(cs []clients.Client, ss []servers.Server, r router.Router) *DefaultObject {
 	m := make([]chan DefaultRemoteMsg, len(cs))
 	for i := range m {
 		m[i] = make(chan DefaultRemoteMsg, config.GetConf().BufSize)
@@ -25,7 +25,7 @@ func NewDefault(cs []clients.Client, ss []servers.Server) *DefaultObject {
 	return &DefaultObject{
 		C:         cs,
 		S:         ss,
-		R:         router.ARouter{},
+		R:         r,
 		Msg:       m,
 		CloseChan: make(chan int8),
 		stop:      false,
@@ -144,7 +144,7 @@ func (o *DefaultObject) handelOneServer(i int, w *sync.WaitGroup) {
 				c.Close()
 				return
 			}
-			r := o.R.Route(addr)
+			r := o.R.Route(i, addr)
 			if r > len(o.Msg)-1 {
 				r = 0
 			}

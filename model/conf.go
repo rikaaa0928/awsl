@@ -30,18 +30,35 @@ type In struct {
 	Awsl *AwslIn
 	HTTP *HTTPIn
 	Type string
+	Tag  string
 }
 
 // Out out
 type Out struct {
 	Type string
 	Awsl *AwslOut
+	Tag  string
 }
 
 // Object object
 type Object struct {
-	Ins      []In
-	Outs     []Out
-	BufSize  int
-	NoVerify bool
+	Ins        []In
+	Outs       []Out
+	BufSize    int
+	NoVerify   bool
+	Data       map[string]DataFile
+	RouteRules []RouteRule
+}
+
+// DataFile DataFile
+type DataFile struct {
+	Name string
+	Type int
+}
+
+// RouteRule route rule
+type RouteRule struct {
+	InTags   []string
+	OutTag   string
+	DataTags []string
 }
