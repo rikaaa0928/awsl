@@ -122,5 +122,6 @@ func (r ARouter) Route(src int, addr model.ANetAddr) int {
 			return outID
 		}
 	}
+	r.Cache[strconv.Itoa(src)+addr.Host] = 0
 	return 0
 }
