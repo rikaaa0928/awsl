@@ -4,6 +4,7 @@ import (
 	"io/ioutil"
 	"strconv"
 	"strings"
+	"sync"
 
 	"github.com/Evi1/awsl/model"
 	"github.com/Evi1/awsl/tools/dns"
@@ -11,7 +12,7 @@ import (
 )
 
 // NewDefaultRouter NewDefaultRouter
-func NewDefaultRouter(conf model.Object) ARouter {
+func NewDefaultRouter(conf model.Object) *ARouter {
 	inMap := make(map[int]string)
 	for i, v := range conf.Ins {
 		if len(v.Tag) == 0 {
@@ -27,9 +28,10 @@ func NewDefaultRouter(conf model.Object) ARouter {
 		outMap[v.Tag] = i
 	}
 	if conf.Data == nil {
-		return ARouter{RuleSet: nil, RulesForIn: nil, InMap: inMap, OutMap: outMap,
+		return &ARouter{RuleSet: nil, RulesForIn: nil, InMap: inMap, OutMap: outMap,
 			Resolver: dns.DoH{URL: "https://cloudflare-dns.com/dns-query"},
-			Cache:    make(map[string]int)}
+			Cache:    make(map[string]int),
+			CLock:    sync.Mutex{}}
 	}
 	ruleSet := make(map[string]inlist.InList)
 	for k, v := range conf.Data {
@@ -58,9 +60,10 @@ func NewDefaultRouter(conf model.Object) ARouter {
 			}
 		}
 	}
-	return ARouter{RuleSet: ruleSet, RulesForIn: ruleForIn, InMap: inMap, OutMap: outMap,
+	return &ARouter{RuleSet: ruleSet, RulesForIn: ruleForIn, InMap: inMap, OutMap: outMap,
 		Resolver: dns.DoH{URL: "https://cloudflare-dns.com/dns-query"},
-		Cache:    make(map[string]int)}
+		Cache:    make(map[string]int),
+		CLock:    sync.Mutex{}}
 }
 
 type routeRule struct {
@@ -76,15 +79,18 @@ type ARouter struct {
 	OutMap     map[string]int
 	Resolver   dns.DNS
 	Cache      map[string]int
+	CLock      sync.Mutex
 }
 
 // Route Route
-func (r ARouter) Route(src int, addr model.ANetAddr) int {
+func (r *ARouter) Route(src int, addr model.ANetAddr) int {
 	if r.RuleSet == nil || r.RulesForIn == nil {
 		return 0
 	}
-	// cache
+	//
+	r.CLock.Lock()
 	result, ok := r.Cache[strconv.Itoa(src)+addr.Host]
+	r.CLock.Unlock()
 	if ok {
 		return result
 	}
@@ -118,10 +124,14 @@ func (r ARouter) Route(src int, addr model.ANetAddr) int {
 			if !ok {
 				return 0
 			}
+			r.CLock.Lock()
+			defer r.CLock.Unlock()
 			r.Cache[strconv.Itoa(src)+addr.Host] = outID
 			return outID
 		}
 	}
+	r.CLock.Lock()
+	defer r.CLock.Unlock()
 	r.Cache[strconv.Itoa(src)+addr.Host] = 0
 	return 0
 }
