@@ -2,6 +2,7 @@ package router
 
 import (
 	"io/ioutil"
+	"log"
 	"strconv"
 	"strings"
 	"sync"
@@ -117,12 +118,14 @@ func (r *ARouter) Route(src int, addr model.ANetAddr) []int {
 			if time.Now().Before(r.LastClean.Add(6 * time.Hour)) {
 				return
 			}
+			log.Println("cleanning router cache start at " + time.Now().Format("Mon Jan 2 15:04:05 -0700 MST 2006"))
 			for k, v := range r.Cache {
 				if v.lastTime.Add(6 * time.Hour).Before(time.Now()) {
 					delete(r.Cache, k)
 				}
 			}
 			r.LastClean = time.Now()
+			log.Println("cleanning router cache done at " + time.Now().Format("Mon Jan 2 15:04:05 -0700 MST 2006"))
 		}()
 	}
 	r.CLock.Lock()
