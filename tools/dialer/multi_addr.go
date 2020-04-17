@@ -40,11 +40,11 @@ func (d *MultiAddr) Dial(network, addr string) (net.Conn, error) {
 		defer d.lock.Unlock()
 		if hostID == d.HostInUse[host] {
 			d.HostInUse[host]++
+			log.Println("addr choosing", d.HostInUse[host], hostList[d.HostInUse[host]])
 		}
 		if int(d.HostInUse[host]) >= len(hostList) {
 			d.HostInUse[host] = 0
 		}
-		log.Println("addr choosing", d.HostInUse[host], hostList[d.HostInUse[host]])
 		return conn, err
 	}
 	return conn, nil
