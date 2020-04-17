@@ -5,6 +5,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/Evi1/awsl/model"
 	"github.com/Evi1/awsl/tools/dns"
@@ -13,6 +14,7 @@ import (
 
 // NewDefaultRouter NewDefaultRouter
 func NewDefaultRouter(conf model.Object) *ARouter {
+
 	inMap := make(map[int]string)
 	for i, v := range conf.Ins {
 		if len(v.Tag) == 0 {
@@ -27,11 +29,12 @@ func NewDefaultRouter(conf model.Object) *ARouter {
 		}
 		outMap[v.Tag] = i
 	}
+	r := &ARouter{RuleSet: nil, RulesForIn: nil, InMap: inMap, OutMap: outMap,
+		Resolver: dns.DoH{URL: "https://cloudflare-dns.com/dns-query"},
+		Cache:    make(map[string]routeCache),
+		CLock:    sync.Mutex{}}
 	if conf.Data == nil {
-		return &ARouter{RuleSet: nil, RulesForIn: nil, InMap: inMap, OutMap: outMap,
-			Resolver: dns.DoH{URL: "https://cloudflare-dns.com/dns-query"},
-			Cache:    make(map[string][]int),
-			CLock:    sync.Mutex{}}
+		return r
 	}
 	ruleSet := make(map[string]inlist.InList)
 	for k, v := range conf.Data {
@@ -63,15 +66,25 @@ func NewDefaultRouter(conf model.Object) *ARouter {
 			}
 		}
 	}
-	return &ARouter{RuleSet: ruleSet, RulesForIn: ruleForIn, InMap: inMap, OutMap: outMap,
-		Resolver: dns.DoH{URL: "https://cloudflare-dns.com/dns-query"},
-		Cache:    make(map[string][]int),
-		CLock:    sync.Mutex{}}
+	r.RuleSet = ruleSet
+	r.RulesForIn = ruleForIn
+	return r
 }
 
 type routeRule struct {
 	RuleTag string
 	OutTags []string
+}
+
+type routeCache struct {
+	data     []int
+	lastTime time.Time
+	timeOut  time.Duration
+}
+
+// TempRoute TempRoute
+type TempRoute interface {
+	TempRoute(src int, addr model.ANetAddr, outID int)
 }
 
 // ARouter ARouter
@@ -81,8 +94,10 @@ type ARouter struct {
 	InMap      map[int]string
 	OutMap     map[string]int
 	Resolver   dns.DNS
-	Cache      map[string][]int
+	Cache      map[string]routeCache
 	CLock      sync.Mutex
+	Cleaning   bool
+	LastClean  time.Time
 }
 
 // Route Route
@@ -90,13 +105,36 @@ func (r *ARouter) Route(src int, addr model.ANetAddr) []int {
 	if r.RuleSet == nil || r.RulesForIn == nil {
 		return []int{0}
 	}
-	//
-	r.CLock.Lock()
-	result, ok := r.Cache[strconv.Itoa(src)+addr.Host]
-	r.CLock.Unlock()
-	if ok {
-		return result
+	// cache
+	if !r.Cleaning && time.Now().After(r.LastClean.Add(6*time.Hour)) {
+		go func() {
+			r.CLock.Lock()
+			defer r.CLock.Unlock()
+			r.Cleaning = true
+			defer func() {
+				r.Cleaning = false
+			}()
+			if time.Now().Before(r.LastClean.Add(6 * time.Hour)) {
+				return
+			}
+			for k, v := range r.Cache {
+				if v.lastTime.Add(6 * time.Hour).Before(time.Now()) {
+					delete(r.Cache, k)
+				}
+			}
+			r.LastClean = time.Now()
+		}()
 	}
+	r.CLock.Lock()
+	result, ok := r.Cache[strconv.Itoa(src)+"-"+addr.Host]
+	if ok {
+		if result.lastTime.Add(result.timeOut).After(time.Now()) {
+			r.CLock.Unlock()
+			return result.data
+		}
+		delete(r.Cache, strconv.Itoa(src)+addr.Host)
+	}
+	r.CLock.Unlock()
 	// resolve
 	inTag, ok := r.InMap[src]
 	if !ok {
@@ -137,12 +175,19 @@ func (r *ARouter) Route(src int, addr model.ANetAddr) []int {
 			}*/
 			r.CLock.Lock()
 			defer r.CLock.Unlock()
-			r.Cache[strconv.Itoa(src)+addr.Host] = outIDs
+			r.Cache[strconv.Itoa(src)+"-"+addr.Host] = routeCache{data: outIDs, lastTime: time.Now(), timeOut: 6 * time.Hour}
 			return outIDs
 		}
 	}
 	r.CLock.Lock()
 	defer r.CLock.Unlock()
-	r.Cache[strconv.Itoa(src)+addr.Host] = []int{0}
+	r.Cache[strconv.Itoa(src)+"-"+addr.Host] = routeCache{data: []int{0}, lastTime: time.Now(), timeOut: 6 * time.Hour}
 	return []int{0}
+}
+
+// TempRoute TempRoute
+func (r *ARouter) TempRoute(src int, addr model.ANetAddr, outID int) {
+	r.CLock.Lock()
+	defer r.CLock.Unlock()
+	r.Cache[strconv.Itoa(src)+"-"+addr.Host] = routeCache{data: []int{outID}, lastTime: time.Now(), timeOut: 10 * time.Minute}
 }

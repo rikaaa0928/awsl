@@ -44,9 +44,11 @@ type DefaultObject struct {
 
 // DefaultRemoteMsg DEFAULT
 type DefaultRemoteMsg struct {
-	c  net.Conn
-	a  model.ANetAddr
-	rs []int
+	c        net.Conn
+	a        model.ANetAddr
+	rs       []int
+	reRouted bool
+	src      int
 }
 
 // Run object
@@ -80,6 +82,7 @@ func (o *DefaultObject) handelOneClient(i int) {
 					if len(m.rs) > 0 {
 						r := m.rs[0]
 						m.rs = m.rs[1:]
+						m.reRouted = true
 						o.Msg[r] <- m
 						if config.Debug {
 							log.Printf("swith route to %d.\n", r)
@@ -90,6 +93,12 @@ func (o *DefaultObject) handelOneClient(i int) {
 					log.Println("client Dial error. client no.", i, " error = ", err)
 					return
 				}
+				// temp route
+				tr, ok := o.R.(router.TempRoute)
+				if m.reRouted && ok {
+					tr.TempRoute(m.src, m.a, i)
+				}
+				// client connection
 				err = o.C[i].Verify(c)
 				if err != nil {
 					m.c.Close()
@@ -163,7 +172,7 @@ func (o *DefaultObject) handelOneServer(i int, w *sync.WaitGroup) {
 			if r > len(o.Msg)-1 {
 				r = 0
 			}
-			o.Msg[r] <- DefaultRemoteMsg{c: c, a: addr, rs: rs}
+			o.Msg[r] <- DefaultRemoteMsg{c: c, a: addr, rs: rs, src: i}
 		}()
 	}
 	l.Close()
