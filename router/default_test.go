@@ -35,7 +35,7 @@ func Test_R(t *testing.T) {
 		"routerules":[
 			{
 				"intags":["in1"],
-				"outtag":"out2",
+				"outtags":["out2"],
 				"DataTags":["cn"]
 			}
 		]
@@ -46,8 +46,8 @@ func Test_R(t *testing.T) {
 	}
 	//t.Log(confStr,conf)
 	r := NewDefaultRouter(conf)
+	t.Log(r.Resolver.Resolve("live.bilibili.com"))
 	t.Log(r.Resolver.Resolve("pan.baidu.com"))
-	t.Log(r.Resolver.Resolve("jd.com"))
-	t.Log(r.Route(0, model.ANetAddr{Host: "jd.com", Typ: 1}))
-	t.Log(r.Route(0, model.ANetAddr{Host: "www.baidu.com", Typ: 1}))
+	t.Log(r.Route(0, model.ANetAddr{Host: "live.bilibili.com", Typ: 1}))
+	t.Log(r.Route(0, model.ANetAddr{Host: "pan.baidu.com", Typ: 1}))
 }

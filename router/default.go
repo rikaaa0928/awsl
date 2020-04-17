@@ -49,6 +49,9 @@ func NewDefaultRouter(conf model.Object) *ARouter {
 	for _, v := range conf.RouteRules {
 		rr := routeRule{}
 		rr.OutTags = v.OutTags
+		if len(rr.OutTags) == 0 {
+			continue
+		}
 		for _, vv := range v.DataTags {
 			rr.RuleTag = vv
 			for _, vvv := range v.InTags {
@@ -105,7 +108,7 @@ func (r *ARouter) Route(src int, addr model.ANetAddr) []int {
 	}
 	for _, v := range rules {
 		ruleList, ok := r.RuleSet[v.RuleTag]
-		if !ok {
+		if !ok || len(v.OutTags) == 0 {
 			return []int{0}
 		}
 		host := addr.Host

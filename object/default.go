@@ -1,6 +1,7 @@
 package object
 
 import (
+	"fmt"
 	"io"
 	"log"
 	"net"
@@ -154,6 +155,7 @@ func (o *DefaultObject) handelOneServer(i int, w *sync.WaitGroup) {
 				return
 			}
 			rs := o.R.Route(i, addr)
+			fmt.Println(i, rs, addr)
 			if len(rs) == 0 {
 				log.Printf("Fatal error, no route for %d, %s.\n", i, addr.Host)
 				return
