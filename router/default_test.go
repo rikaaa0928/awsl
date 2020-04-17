@@ -49,5 +49,5 @@ func Test_R(t *testing.T) {
 	t.Log(r.Resolver.Resolve("pan.baidu.com"))
 	t.Log(r.Resolver.Resolve("jd.com"))
 	t.Log(r.Route(0, model.ANetAddr{Host: "jd.com", Typ: 1}))
-	t.Log(r.Route(0, model.ANetAddr{Host: "pan.baidu.com", Typ: 1}))
+	t.Log(r.Route(0, model.ANetAddr{Host: "www.baidu.com", Typ: 1}))
 }

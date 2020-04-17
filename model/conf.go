@@ -59,6 +59,6 @@ type DataFile struct {
 // RouteRule route rule
 type RouteRule struct {
 	InTags   []string
-	OutTag   string
+	OutTags  []string
 	DataTags []string
 }

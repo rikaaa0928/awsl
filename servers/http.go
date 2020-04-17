@@ -55,7 +55,15 @@ func (s *HTTPServer) Listen() net.Listener {
 					http.Error(w, err.Error(), http.StatusBadRequest)
 					return
 				}
+
 				addr := model.ANetAddr{Host: sl[0], Port: port}
+				if net.ParseIP(addr.Host) == nil {
+					addr.Typ = model.RAWADDR
+				} else if net.ParseIP(addr.Host).To4() != nil {
+					addr.Typ = model.IPV4ADDR
+				} else if net.ParseIP(addr.Host).To16() != nil {
+					addr.Typ = model.IPV6ADDR
+				}
 
 				hijacker, ok := w.(http.Hijacker)
 				if !ok {
@@ -118,6 +126,15 @@ func (s *HTTPServer) Listen() net.Listener {
 				}
 
 				addr := model.ANetAddr{Host: rHost, Port: rPort}
+
+				if net.ParseIP(addr.Host) == nil {
+					addr.Typ = model.RAWADDR
+				} else if net.ParseIP(addr.Host).To4() != nil {
+					addr.Typ = model.IPV4ADDR
+				} else if net.ParseIP(addr.Host).To16() != nil {
+					addr.Typ = model.IPV6ADDR
+				}
+
 				conn := &HTTPGetConn{W: w, R: r, addr: addr, CloseChan: make(chan int8)}
 				s.Conns <- conn
 

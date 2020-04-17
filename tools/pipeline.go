@@ -5,6 +5,8 @@ import (
 	"log"
 	"net"
 	"time"
+
+	"github.com/Evi1/awsl/config"
 )
 
 // SetReadTimeout set
@@ -47,7 +49,9 @@ func PipeThenClose(src, dst net.Conn) {
 			if err == io.EOF {
 				break
 			}
-			log.Println("pip read: " + err.Error())
+			if config.Debug {
+				log.Println("pip read: " + err.Error())
+			}
 			break
 		}
 	}

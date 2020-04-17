@@ -30,7 +30,7 @@ func NewDefaultRouter(conf model.Object) *ARouter {
 	if conf.Data == nil {
 		return &ARouter{RuleSet: nil, RulesForIn: nil, InMap: inMap, OutMap: outMap,
 			Resolver: dns.DoH{URL: "https://cloudflare-dns.com/dns-query"},
-			Cache:    make(map[string]int),
+			Cache:    make(map[string][]int),
 			CLock:    sync.Mutex{}}
 	}
 	ruleSet := make(map[string]inlist.InList)
@@ -48,7 +48,7 @@ func NewDefaultRouter(conf model.Object) *ARouter {
 	ruleForIn := make(map[string][]routeRule)
 	for _, v := range conf.RouteRules {
 		rr := routeRule{}
-		rr.OutTag = v.OutTag
+		rr.OutTags = v.OutTags
 		for _, vv := range v.DataTags {
 			rr.RuleTag = vv
 			for _, vvv := range v.InTags {
@@ -62,13 +62,13 @@ func NewDefaultRouter(conf model.Object) *ARouter {
 	}
 	return &ARouter{RuleSet: ruleSet, RulesForIn: ruleForIn, InMap: inMap, OutMap: outMap,
 		Resolver: dns.DoH{URL: "https://cloudflare-dns.com/dns-query"},
-		Cache:    make(map[string]int),
+		Cache:    make(map[string][]int),
 		CLock:    sync.Mutex{}}
 }
 
 type routeRule struct {
 	RuleTag string
-	OutTag  string
+	OutTags []string
 }
 
 // ARouter ARouter
@@ -78,14 +78,14 @@ type ARouter struct {
 	InMap      map[int]string
 	OutMap     map[string]int
 	Resolver   dns.DNS
-	Cache      map[string]int
+	Cache      map[string][]int
 	CLock      sync.Mutex
 }
 
 // Route Route
-func (r *ARouter) Route(src int, addr model.ANetAddr) int {
+func (r *ARouter) Route(src int, addr model.ANetAddr) []int {
 	if r.RuleSet == nil || r.RulesForIn == nil {
-		return 0
+		return []int{0}
 	}
 	//
 	r.CLock.Lock()
@@ -97,22 +97,22 @@ func (r *ARouter) Route(src int, addr model.ANetAddr) int {
 	// resolve
 	inTag, ok := r.InMap[src]
 	if !ok {
-		return 0
+		return []int{0}
 	}
 	rules, ok := r.RulesForIn[inTag]
 	if !ok || len(rules) == 0 {
-		return 0
+		return []int{0}
 	}
 	for _, v := range rules {
 		ruleList, ok := r.RuleSet[v.RuleTag]
 		if !ok {
-			return 0
+			return []int{0}
 		}
 		host := addr.Host
 		if addr.Typ == model.RAWADDR {
 			result, _ := r.Resolver.Resolve(addr.Host)
 			if len(result.V4)+len(result.V6) == 0 {
-				return 0
+				return []int{0}
 			}
 			host = result.V4
 			if len(host) == 0 {
@@ -120,18 +120,26 @@ func (r *ARouter) Route(src int, addr model.ANetAddr) int {
 			}
 		}
 		if ruleList.Include(host) {
-			outID, ok := r.OutMap[v.OutTag]
+			outIDs := make([]int, 0, len(v.OutTags))
+			for _, outTag := range v.OutTags {
+				outID, ok := r.OutMap[outTag]
+				if !ok {
+					return []int{0}
+				}
+				outIDs = append(outIDs, outID)
+			}
+			/*outID, ok := r.OutMap[v.OutTag]
 			if !ok {
 				return 0
-			}
+			}*/
 			r.CLock.Lock()
 			defer r.CLock.Unlock()
-			r.Cache[strconv.Itoa(src)+addr.Host] = outID
-			return outID
+			r.Cache[strconv.Itoa(src)+addr.Host] = outIDs
+			return outIDs
 		}
 	}
 	r.CLock.Lock()
 	defer r.CLock.Unlock()
-	r.Cache[strconv.Itoa(src)+addr.Host] = 0
-	return 0
+	r.Cache[strconv.Itoa(src)+addr.Host] = []int{0}
+	return []int{0}
 }

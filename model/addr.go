@@ -4,6 +4,7 @@ const (
 	IPV4ADDR = 4
 	IPV6ADDR = 6
 	RAWADDR  = 1
+	UNKONW   = 0
 	TCP      = 0
 	UDP      = 1
 )
