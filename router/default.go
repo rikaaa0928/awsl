@@ -49,11 +49,21 @@ func NewDefaultRouter(conf model.Object) *ARouter {
 		}
 		ruleSet[k] = inlist.NewIPList(ruleList)
 	}
-	ruleForIn := make(map[string][]routeRule)
+	ruleForIn := make(map[string][]routeTagOut)
 	for _, v := range conf.RouteRules {
-		rr := routeRule{}
+		rr := routeTagOut{}
 		rr.OutTags = v.OutTags
 		if len(rr.OutTags) == 0 {
+			continue
+		}
+		if len(v.DataTags) == 0 {
+			for _, vvv := range v.InTags {
+				_, ok := ruleForIn[vvv]
+				if !ok {
+					ruleForIn[vvv] = make([]routeTagOut, 0)
+				}
+				ruleForIn[vvv] = append(ruleForIn[vvv], rr)
+			}
 			continue
 		}
 		for _, vv := range v.DataTags {
@@ -61,7 +71,7 @@ func NewDefaultRouter(conf model.Object) *ARouter {
 			for _, vvv := range v.InTags {
 				_, ok := ruleForIn[vvv]
 				if !ok {
-					ruleForIn[vvv] = make([]routeRule, 0)
+					ruleForIn[vvv] = make([]routeTagOut, 0)
 				}
 				ruleForIn[vvv] = append(ruleForIn[vvv], rr)
 			}
@@ -72,7 +82,7 @@ func NewDefaultRouter(conf model.Object) *ARouter {
 	return r
 }
 
-type routeRule struct {
+type routeTagOut struct {
 	RuleTag string
 	OutTags []string
 }
@@ -91,7 +101,7 @@ type TempRoute interface {
 // ARouter ARouter
 type ARouter struct {
 	RuleSet    map[string]inlist.InList
-	RulesForIn map[string][]routeRule
+	RulesForIn map[string][]routeTagOut
 	InMap      map[int]string
 	OutMap     map[string]int
 	Resolver   dns.DNS
@@ -148,6 +158,9 @@ func (r *ARouter) Route(src int, addr model.ANetAddr) []int {
 		return []int{0}
 	}
 	for _, v := range rules {
+		if len(v.RuleTag) == 0 {
+			return r.parse(v.OutTags, strconv.Itoa(src)+"-"+addr.Host)
+		}
 		ruleList, ok := r.RuleSet[v.RuleTag]
 		if !ok || len(v.OutTags) == 0 {
 			return []int{0}
@@ -164,7 +177,7 @@ func (r *ARouter) Route(src int, addr model.ANetAddr) []int {
 			}
 		}
 		if ruleList.Include(host) {
-			outIDs := make([]int, 0, len(v.OutTags))
+			/*outIDs := make([]int, 0, len(v.OutTags))
 			for _, outTag := range v.OutTags {
 				outID, ok := r.OutMap[outTag]
 				if !ok {
@@ -172,20 +185,32 @@ func (r *ARouter) Route(src int, addr model.ANetAddr) []int {
 				}
 				outIDs = append(outIDs, outID)
 			}
-			/*outID, ok := r.OutMap[v.OutTag]
-			if !ok {
-				return 0
-			}*/
 			r.CLock.Lock()
 			defer r.CLock.Unlock()
 			r.Cache[strconv.Itoa(src)+"-"+addr.Host] = routeCache{data: outIDs, lastTime: time.Now(), timeOut: 6 * time.Hour}
-			return outIDs
+			return outIDs*/
+			return r.parse(v.OutTags, strconv.Itoa(src)+"-"+addr.Host)
 		}
 	}
 	r.CLock.Lock()
 	defer r.CLock.Unlock()
 	r.Cache[strconv.Itoa(src)+"-"+addr.Host] = routeCache{data: []int{0}, lastTime: time.Now(), timeOut: 6 * time.Hour}
 	return []int{0}
+}
+
+func (r *ARouter) parse(outTags []string, key string) []int {
+	outIDs := make([]int, 0, len(outTags))
+	for _, outTag := range outTags {
+		outID, ok := r.OutMap[outTag]
+		if !ok {
+			return []int{0}
+		}
+		outIDs = append(outIDs, outID)
+	}
+	r.CLock.Lock()
+	defer r.CLock.Unlock()
+	r.Cache[key] = routeCache{data: outIDs, lastTime: time.Now(), timeOut: 6 * time.Hour}
+	return outIDs
 }
 
 // TempRoute TempRoute
