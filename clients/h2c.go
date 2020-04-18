@@ -76,7 +76,7 @@ func (c *H2C) Dial(addr model.ANetAddr) (net.Conn, error) {
 	}
 	if resp.StatusCode != http.StatusOK {
 		b, _ := ioutil.ReadAll(resp.Body)
-		return nil, errors.New(strconv.Itoa(resp.StatusCode) + string(b))
+		return nil, errors.New(strconv.Itoa(resp.StatusCode) + ". err body = " + string(b))
 	}
 	return &h2cConn{w: pw, r: resp.Body}, nil
 }
