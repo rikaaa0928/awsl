@@ -23,7 +23,7 @@ func PipeThenClose(src, dst net.Conn) {
 	buf := MemPool.Get(65536)
 	defer MemPool.Put(buf)
 
-	//io.CopyBuffer(dst, src, buf)
+	// io.CopyBuffer(dst, src, buf)
 	for {
 		// SetReadTimeout(src, 3*time.Second)
 		n, err := src.Read(buf)
@@ -39,14 +39,9 @@ func PipeThenClose(src, dst net.Conn) {
 			}
 		}
 		if err != nil {
-			e, ok := err.(*net.OpError)
+			_, ok := err.(*net.OpError)
 			if ok {
-				if e.Timeout() {
-					break
-				}
-				if !e.Temporary() {
-					break
-				}
+				break
 			}
 			if err == io.EOF {
 				break

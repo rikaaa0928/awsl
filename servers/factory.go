@@ -21,6 +21,8 @@ func NewServers(conf []model.In) []Server {
 		r = append(r, NewAHL(v.Host, v.Port, v.Awsl.URI, v.Awsl.Auth, v.Awsl.Key, v.Awsl.Cert, v.Awsl.Chan))*/
 		case "h2c":
 			r = append(r, NewH2C(v.Host, v.Port, v.Awsl.URI, v.Awsl.Auth, v.Awsl.Key, v.Awsl.Cert, v.Awsl.Chan))
+		case "tcp":
+			r = append(r, NewTCP(v.Host, v.Port, v.TCP.Auth))
 		default:
 			panic(v.Type)
 		}

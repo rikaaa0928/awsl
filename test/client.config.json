@@ -1,11 +1,16 @@
 {
     "outs": [
         {
-            "type": "h2c",
+            "type": "tcp",
             "awsl": {
                 "host": "lo.bilibili.network",
                 "port": "1444",
                 "uri": "h2c",
+                "auth": "1234567890"
+            },
+            "tcp": {
+                "host": "lo.bilibili.network",
+                "port": "1442",
                 "auth": "1234567890"
             }
         }

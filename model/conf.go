@@ -14,11 +14,24 @@ type AwslIn struct {
 	Chan int
 }
 
+// TCPIn TCPIn
+type TCPIn struct {
+	Auth string
+}
+
 // AwslOut awsl
 type AwslOut struct {
 	Host   string
 	Port   string
 	URI    string
+	Auth   string
+	BackUp []string
+}
+
+// TCPOut TCPOut
+type TCPOut struct {
+	Host   string
+	Port   string
 	Auth   string
 	BackUp []string
 }
@@ -29,6 +42,7 @@ type In struct {
 	Port string
 	Awsl *AwslIn
 	HTTP *HTTPIn
+	TCP  *TCPIn
 	Type string
 	Tag  string
 }
@@ -37,6 +51,7 @@ type In struct {
 type Out struct {
 	Type string
 	Awsl *AwslOut
+	TCP  *TCPOut
 	Tag  string
 }
 

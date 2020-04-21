@@ -8,6 +8,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/Evi1/awsl/config"
 	"github.com/Evi1/awsl/model"
 	"github.com/Evi1/awsl/tools/dns"
 	inlist "github.com/Evi1/awsl/tools/inList"
@@ -117,7 +118,7 @@ func (r *ARouter) Route(src int, addr model.ANetAddr) []int {
 		return []int{0}
 	}
 	// cache
-	if !r.Cleaning && time.Now().After(r.LastClean.Add(6*time.Hour)) {
+	if config.RouteCache && !r.Cleaning && time.Now().After(r.LastClean.Add(6*time.Hour)) {
 		go func() {
 			r.CLock.Lock()
 			defer r.CLock.Unlock()
@@ -138,16 +139,18 @@ func (r *ARouter) Route(src int, addr model.ANetAddr) []int {
 			log.Println("cleanning router cache done at " + time.Now().Format("Mon Jan 2 15:04:05 -0700 MST 2006"))
 		}()
 	}
-	r.CLock.Lock()
-	result, ok := r.Cache[strconv.Itoa(src)+"-"+addr.Host]
-	if ok {
-		if result.lastTime.Add(result.timeOut).After(time.Now()) {
-			r.CLock.Unlock()
-			return result.data
+	if config.RouteCache {
+		r.CLock.Lock()
+		result, ok := r.Cache[strconv.Itoa(src)+"-"+addr.Host]
+		if ok {
+			if result.lastTime.Add(result.timeOut).After(time.Now()) {
+				r.CLock.Unlock()
+				return result.data
+			}
+			delete(r.Cache, strconv.Itoa(src)+addr.Host)
 		}
-		delete(r.Cache, strconv.Itoa(src)+addr.Host)
+		r.CLock.Unlock()
 	}
-	r.CLock.Unlock()
 	// resolve
 	inTag, ok := r.InMap[src]
 	if !ok {
@@ -192,9 +195,12 @@ func (r *ARouter) Route(src int, addr model.ANetAddr) []int {
 			return r.parse(v.OutTags, strconv.Itoa(src)+"-"+addr.Host)
 		}
 	}
-	r.CLock.Lock()
-	defer r.CLock.Unlock()
-	r.Cache[strconv.Itoa(src)+"-"+addr.Host] = routeCache{data: []int{0}, lastTime: time.Now(), timeOut: 6 * time.Hour}
+	if config.RouteCache {
+		r.CLock.Lock()
+		defer r.CLock.Unlock()
+		r.Cache[strconv.Itoa(src)+"-"+addr.Host] = routeCache{data: []int{0}, lastTime: time.Now(), timeOut: 6 * time.Hour}
+	}
+
 	return []int{0}
 }
 
@@ -207,14 +213,19 @@ func (r *ARouter) parse(outTags []string, key string) []int {
 		}
 		outIDs = append(outIDs, outID)
 	}
-	r.CLock.Lock()
-	defer r.CLock.Unlock()
-	r.Cache[key] = routeCache{data: outIDs, lastTime: time.Now(), timeOut: 6 * time.Hour}
+	if config.RouteCache {
+		r.CLock.Lock()
+		defer r.CLock.Unlock()
+		r.Cache[key] = routeCache{data: outIDs, lastTime: time.Now(), timeOut: 6 * time.Hour}
+	}
 	return outIDs
 }
 
 // TempRoute TempRoute
 func (r *ARouter) TempRoute(src int, addr model.ANetAddr, outID int) {
+	if !config.RouteCache {
+		return
+	}
 	r.CLock.Lock()
 	defer r.CLock.Unlock()
 	r.Cache[strconv.Itoa(src)+"-"+addr.Host] = routeCache{data: []int{outID}, lastTime: time.Now(), timeOut: 10 * time.Minute}
