@@ -180,6 +180,7 @@ func (r *ARouter) Route(src int, addr model.ANetAddr) []int {
 			}
 		}
 		if ruleList.Include(host) {
+			//fmt.Println(ruleList)
 			/*outIDs := make([]int, 0, len(v.OutTags))
 			for _, outTag := range v.OutTags {
 				outID, ok := r.OutMap[outTag]

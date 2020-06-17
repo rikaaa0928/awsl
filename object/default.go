@@ -17,28 +17,32 @@ import (
 )
 
 // NewDefault NewDefault
-func NewDefault(cs []clients.Client, ss []servers.Server, r router.Router) *DefaultObject {
+func NewDefault(cs []clients.Client, ss []servers.Server, r router.Router, closeWait *tools.CloseWait) *DefaultObject {
+	//var cancel context.CancelFunc
+	//config.MainContext, cancel = context.WithCancel(context.Background())
 	m := make([]chan DefaultRemoteMsg, len(cs))
 	for i := range m {
 		m[i] = make(chan DefaultRemoteMsg, config.GetConf().BufSize)
 	}
 	return &DefaultObject{
-		C:         cs,
-		S:         ss,
-		R:         r,
-		Msg:       m,
-		CloseChan: make(chan int8),
+		C:   cs,
+		S:   ss,
+		R:   r,
+		Msg: m,
+		//CloseChan: make(chan int8),
+		closeWait: closeWait,
 		stop:      false,
 	}
 }
 
 // DefaultObject default
 type DefaultObject struct {
-	C         []clients.Client
-	S         []servers.Server
-	R         router.Router
-	Msg       []chan DefaultRemoteMsg
-	CloseChan chan int8
+	C   []clients.Client
+	S   []servers.Server
+	R   router.Router
+	Msg []chan DefaultRemoteMsg
+	//CloseChan chan int8
+	closeWait *tools.CloseWait
 	stop      bool
 }
 
@@ -63,7 +67,7 @@ func (o *DefaultObject) Stop() {
 		recover()
 	}()
 	o.stop = true
-	close(o.CloseChan)
+	o.closeWait.Close()
 }
 
 func (o *DefaultObject) handelClient() {
@@ -126,7 +130,7 @@ func (o *DefaultObject) handelOneClient(i int) {
 				}
 
 			}()
-		case <-o.CloseChan:
+		case <-o.closeWait.WaitClose():
 			o.stop = true
 		}
 	}

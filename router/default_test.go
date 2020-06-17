@@ -40,7 +40,7 @@ func Test_R(t *testing.T) {
 			},
 			{
 				"intags":["in2","in1"],
-				"outtags":["out2","out1"]
+				"outtags":["out1","out2"]
 			}
 		]
 	}`
@@ -51,8 +51,8 @@ func Test_R(t *testing.T) {
 	//t.Log(confStr,conf)
 	r := NewDefaultRouter(conf)
 	//t.Log(r.Resolver.Resolve("huya.com"))
-	//t.Log(r.Resolver.Resolve("douyu.com"))
+	t.Log(r.Resolver.Resolve("api.steampowered.com"))
 	//t.Log(r.Route(0, model.ANetAddr{Host: "huya.com", Typ: 1}))
-	t.Log(r.Route(1, model.ANetAddr{Host: "douyu.com", Typ: 1}))
-	t.Log(r.Route(0, model.ANetAddr{Host: "douyu.com", Typ: 1}))
+	//t.Log(r.Route(0, model.ANetAddr{Host: "api.steampowered.com", Typ: 1}))
+	t.Log(r.Route(0, model.ANetAddr{Host: "api.steampowered.com", Typ: 1}))
 }

@@ -4,31 +4,27 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"log"
 	"net"
 	"net/http"
-	"strconv"
 
-	"github.com/Evi1/awsl/config"
 	"github.com/Evi1/awsl/model"
 	"github.com/Evi1/awsl/tools"
 	"golang.org/x/net/websocket"
 )
 
 // NewAWSL NewAWSL
-func NewAWSL(listenHost, listenPort, uri, auth, key, cert string, connsSize int) *AWSL {
+func NewAWSL(ctx context.Context, listenHost, listenPort, uri, auth, key, cert string, connsSize int) *AWSL {
 	a := &AWSL{
-		IP:        listenHost,
-		Port:      listenPort,
-		URI:       uri,
-		Auth:      auth,
-		Conns:     make(chan net.Conn, connsSize),
-		Cert:      cert,
-		Key:       key,
-		ConnNum:   make(chan int, 1),
-		CloseChan: make(chan int8),
+		IP:    listenHost,
+		Port:  listenPort,
+		URI:   uri,
+		Auth:  auth,
+		Conns: make(chan net.Conn, connsSize),
+		Cert:  cert,
+		Key:   key,
+		//CloseChan: make(chan int8),
+		closeWait: tools.NewCloseWait(ctx),
 	}
-	a.ConnNum <- 0
 	return a
 }
 
@@ -39,43 +35,25 @@ type AWSL struct {
 	URI  string
 	Auth string
 	// Listener *AWSListener
-	Cert      string
-	Key       string
-	ConnNum   chan int
-	Max       int
-	Conns     chan net.Conn
-	Srv       http.Server
-	CloseChan chan int8
+	Cert  string
+	Key   string
+	Max   int
+	Conns chan net.Conn
+	Srv   http.Server
+	//CloseChan chan int8
+	closeWait *tools.CloseWait
 }
 
 func (s *AWSL) awslHandler(conn *websocket.Conn) {
 	ac := &awslConn{
-		Conn:      conn,
-		CloseChan: make(chan int8),
+		Conn: conn,
+		//CloseChan: make(chan int8),
+		closeWait: tools.NewCloseWait(s.closeWait.Ctx),
 	}
 	s.Conns <- ac
-	if config.Debug {
-		num := <-s.ConnNum
-		num++
-		if num > s.Max {
-			s.Max = num
-			log.Println("max conn: " + strconv.Itoa(num))
-		}
-		s.ConnNum <- num
-	}
 
-	<-ac.CloseChan
-
-	if config.Debug {
-		num := <-s.ConnNum
-		num--
-		log.Println("current conn: " + strconv.Itoa(num))
-		if num == 0 {
-			log.Println("Connection clear")
-		}
-		s.ConnNum <- num
-	}
-
+	//<-ac.CloseChan
+	ac.closeWait.WaitClose()
 }
 
 // Listen server
@@ -136,17 +114,18 @@ func (s *AWSL) Accept() (net.Conn, error) {
 	select {
 	case c := <-s.Conns:
 		return c, nil
-	case <-s.CloseChan:
+	//case <-s.CloseChan:
+	case <-s.closeWait.WaitClose():
 		return nil, errors.New("listenner closed")
 	}
 }
 
 // Close Close
 func (s *AWSL) Close() error {
-	defer func() {
+	/*defer func() {
 		recover()
-	}()
-	close(s.CloseChan)
+	}()*/
+	s.closeWait.Close()
 	return s.Srv.Shutdown(context.Background())
 }
 
@@ -160,14 +139,15 @@ func (s *AWSL) Addr() net.Addr {
 
 type awslConn struct {
 	net.Conn
-	CloseChan chan int8
+	//CloseChan chan int8
+	closeWait *tools.CloseWait
 }
 
 func (c *awslConn) Close() error {
-	defer func() {
+	/*defer func() {
 		recover()
-	}()
+	}()*/
 	err := c.Conn.Close()
-	close(c.CloseChan)
+	c.closeWait.Close()
 	return err
 }

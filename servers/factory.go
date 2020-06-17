@@ -1,9 +1,13 @@
 package servers
 
-import "github.com/Evi1/awsl/model"
+import (
+	"context"
+
+	"github.com/Evi1/awsl/model"
+)
 
 // NewServers new servers
-func NewServers(conf []model.In) []Server {
+func NewServers(ctx context.Context, conf []model.In) []Server {
 	r := make([]Server, 0, len(conf))
 	for _, v := range conf {
 		switch v.Type {
@@ -14,7 +18,7 @@ func NewServers(conf []model.In) []Server {
 		case "socks5":
 			r = append(r, SockeServer{IP: v.Host, Port: v.Port})
 		case "awsl":
-			r = append(r, NewAWSL(v.Host, v.Port, v.Awsl.URI, v.Awsl.Auth, v.Awsl.Key, v.Awsl.Cert, v.Awsl.Chan))
+			r = append(r, NewAWSL(ctx, v.Host, v.Port, v.Awsl.URI, v.Awsl.Auth, v.Awsl.Key, v.Awsl.Cert, v.Awsl.Chan))
 		case "http":
 			r = append(r, NewHTTP(v.Host, v.Port, v.HTTP.Chan))
 		/*case "ahl":
