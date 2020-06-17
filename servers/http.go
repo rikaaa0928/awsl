@@ -1,6 +1,7 @@
 package servers
 
 import (
+	"context"
 	"errors"
 	"log"
 	"net"
@@ -9,29 +10,33 @@ import (
 	"strings"
 
 	"github.com/Evi1/awsl/model"
+	"github.com/Evi1/awsl/tools"
 )
 
 // NewHTTP NewHTTP
-func NewHTTP(listenHost, listenPort string, connsSize int) *HTTPServer {
+func NewHTTP(ctx context.Context, listenHost, listenPort string, connsSize int) *HTTPServer {
 	a := &HTTPServer{
-		IP:    listenHost,
-		Port:  listenPort,
-		Conns: make(chan net.Conn, connsSize),
+		IP:        listenHost,
+		Port:      listenPort,
+		Conns:     make(chan net.Conn, connsSize),
+		closeWait: tools.NewCloseWait(ctx),
 	}
 	return a
 }
 
 // HTTPServer HTTPServer
 type HTTPServer struct {
-	IP    string
-	Port  string
-	Conns chan net.Conn
-	Max   int
+	IP        string
+	Port      string
+	Conns     chan net.Conn
+	Max       int
+	closeWait *tools.CloseWait
+	Srv       http.Server
 }
 
 // Listen server
 func (s *HTTPServer) Listen() net.Listener {
-	server := &http.Server{
+	s.Srv = http.Server{
 		Addr: s.IP + ":" + s.Port,
 		Handler: http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			if r.Method == http.MethodConnect {
@@ -73,9 +78,11 @@ func (s *HTTPServer) Listen() net.Listener {
 					return
 				}
 
-				con := &httpConn{Conn: clientConn, CloseChan: make(chan int8), addr: addr}
+				//con := &httpConn{Conn: clientConn, CloseChan: make(chan int8), addr: addr}
+				con := &httpConn{Conn: clientConn, closeWait: tools.NewCloseWait(s.closeWait.Ctx), addr: addr}
 				s.Conns <- con
-				<-con.CloseChan
+				con.closeWait.WaitClose()
+				//<-con.CloseChan
 			} else {
 				rHost := ""
 				rPort := 80
@@ -109,13 +116,14 @@ func (s *HTTPServer) Listen() net.Listener {
 					addr.Typ = model.IPV6ADDR
 				}
 
-				conn := &HTTPGetConn{W: w, R: r, addr: addr, CloseChan: make(chan int8)}
+				conn := &HTTPGetConn{W: w, R: r, addr: addr, closeWait: tools.NewCloseWait(s.closeWait.Ctx)}
 				s.Conns <- conn
-				<-conn.CloseChan
+				//<-conn.CloseChan
+				conn.closeWait.WaitClose()
 			}
 		}),
 	}
-	go server.ListenAndServe()
+	go s.Srv.ListenAndServe()
 	return s
 }
 
@@ -130,13 +138,18 @@ func (s *HTTPServer) ReadRemote(c net.Conn) (model.ANetAddr, error) {
 
 // Accept Accept
 func (s *HTTPServer) Accept() (net.Conn, error) {
-	c := <-s.Conns
-	return c, nil
+	select {
+	case conn := <-s.Conns:
+		return conn, nil
+	case <-s.closeWait.WaitClose():
+	}
+	return nil, errors.New("http server closed")
 }
 
 // Close Close
 func (s *HTTPServer) Close() error {
-	return nil
+	s.closeWait.Close()
+	return s.Srv.Shutdown(context.Background())
 }
 
 // Addr Addr
@@ -149,13 +162,15 @@ func (s *HTTPServer) Addr() net.Addr {
 
 type httpConn struct {
 	net.Conn
-	addr      model.ANetAddr
-	CloseChan chan int8
+	addr model.ANetAddr
+	//CloseChan chan int8
+	closeWait *tools.CloseWait
 }
 
 func (c *httpConn) Close() error {
 	err := c.Conn.Close()
-	c.CloseChan <- 1
+	c.closeWait.Close()
+	//c.CloseChan <- 1
 	return err
 }
 
@@ -169,7 +184,8 @@ type HTTPGetConn struct {
 	R    *http.Request
 	addr model.ANetAddr
 	net.Conn
-	CloseChan chan int8
+	//CloseChan chan int8
+	closeWait *tools.CloseWait
 }
 
 // GetAddr GetAddr
@@ -179,9 +195,10 @@ func (c *HTTPGetConn) GetAddr() model.ANetAddr {
 
 // Close Close
 func (c *HTTPGetConn) Close() error {
-	defer func() {
+	/*defer func() {
 		recover()
 	}()
-	close(c.CloseChan)
+	close(c.CloseChan)*/
+	c.closeWait.Close()
 	return nil
 }

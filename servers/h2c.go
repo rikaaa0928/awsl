@@ -11,10 +11,11 @@ import (
 	"time"
 
 	"github.com/Evi1/awsl/model"
+	"github.com/Evi1/awsl/tools"
 )
 
 // NewH2C NewH2C
-func NewH2C(listenHost, listenPort, uri, auth, key, cert string, connsSize int) *H2C {
+func NewH2C(ctx context.Context, listenHost, listenPort, uri, auth, key, cert string, connsSize int) *H2C {
 	return &H2C{
 		IP:        listenHost,
 		Port:      listenPort,
@@ -22,19 +23,21 @@ func NewH2C(listenHost, listenPort, uri, auth, key, cert string, connsSize int) 
 		Auth:      auth,
 		Key:       key,
 		Cert:      cert,
-		CloseChan: make(chan int8),
-		Conns:     make(chan net.Conn, connsSize)}
+		closeWait: tools.NewCloseWait(ctx),
+		//CloseChan: make(chan int8),
+		Conns: make(chan net.Conn, connsSize)}
 }
 
 // H2C H2C
 type H2C struct {
-	IP        string
-	Port      string
-	URI       string
-	Auth      string
-	Cert      string
-	Key       string
-	CloseChan chan int8
+	IP   string
+	Port string
+	URI  string
+	Auth string
+	Cert string
+	Key  string
+	//CloseChan chan int8
+	closeWait *tools.CloseWait
 	Conns     chan net.Conn
 	Srv       http.Server
 }
@@ -143,17 +146,18 @@ func (s *H2C) Accept() (net.Conn, error) {
 	select {
 	case conn := <-s.Conns:
 		return conn, nil
-	case <-s.CloseChan:
+	case <-s.closeWait.WaitClose():
 	}
-	return nil, errors.New("closed")
+	return nil, errors.New("h2c server closed")
 }
 
 // Close Close
 func (s *H2C) Close() error {
-	defer func() {
+	/*defer func() {
 		recover()
 	}()
-	close(s.CloseChan)
+	close(s.CloseChan)*/
+	s.closeWait.Close()
 	return s.Srv.Shutdown(context.Background())
 }
 

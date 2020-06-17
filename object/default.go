@@ -63,9 +63,6 @@ func (o *DefaultObject) Run() {
 
 // Stop object
 func (o *DefaultObject) Stop() {
-	defer func() {
-		recover()
-	}()
 	o.stop = true
 	o.closeWait.Close()
 }

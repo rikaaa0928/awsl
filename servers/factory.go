@@ -20,11 +20,11 @@ func NewServers(ctx context.Context, conf []model.In) []Server {
 		case "awsl":
 			r = append(r, NewAWSL(ctx, v.Host, v.Port, v.Awsl.URI, v.Awsl.Auth, v.Awsl.Key, v.Awsl.Cert, v.Awsl.Chan))
 		case "http":
-			r = append(r, NewHTTP(v.Host, v.Port, v.HTTP.Chan))
+			r = append(r, NewHTTP(ctx, v.Host, v.Port, v.HTTP.Chan))
 		/*case "ahl":
 		r = append(r, NewAHL(v.Host, v.Port, v.Awsl.URI, v.Awsl.Auth, v.Awsl.Key, v.Awsl.Cert, v.Awsl.Chan))*/
 		case "h2c":
-			r = append(r, NewH2C(v.Host, v.Port, v.Awsl.URI, v.Awsl.Auth, v.Awsl.Key, v.Awsl.Cert, v.Awsl.Chan))
+			r = append(r, NewH2C(ctx, v.Host, v.Port, v.Awsl.URI, v.Awsl.Auth, v.Awsl.Key, v.Awsl.Cert, v.Awsl.Chan))
 		case "tcp":
 			r = append(r, NewTCP(v.Host, v.Port, v.TCP.Auth))
 		default:

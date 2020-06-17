@@ -116,7 +116,7 @@ func (s *AWSL) Accept() (net.Conn, error) {
 		return c, nil
 	//case <-s.CloseChan:
 	case <-s.closeWait.WaitClose():
-		return nil, errors.New("listenner closed")
+		return nil, errors.New("awsl listenner closed")
 	}
 }
 

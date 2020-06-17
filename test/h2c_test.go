@@ -1,6 +1,7 @@
 package test
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -20,7 +21,7 @@ func TestH2C(t *testing.T) {
 	config.Debug = true
 	conf := config.GetConf()
 	conf.NoVerify = true
-	server := servers.NewH2C("127.0.0.1", "1928", "h2c", "123", "server.key", "server.crt", 32)
+	server := servers.NewH2C(context.Background(), "127.0.0.1", "1928", "h2c", "123", "server.key", "server.crt", 32)
 	l := server.Listen()
 	go func() {
 		conn, err := l.Accept()
