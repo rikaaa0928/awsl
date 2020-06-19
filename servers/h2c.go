@@ -10,7 +10,9 @@ import (
 	"net/url"
 	"time"
 
+	"github.com/Evi1/awsl/config"
 	"github.com/Evi1/awsl/model"
+	"github.com/Evi1/awsl/servers/manage"
 	"github.com/Evi1/awsl/tools"
 )
 
@@ -101,8 +103,15 @@ func (s *H2C) serve(w http.ResponseWriter, r *http.Request) {
 	c := &h2cConn{w: ww, r: rr, Pw: pw.Value, Addr: addr}
 
 	s.Conns <- c
+	if config.Manage > 0 {
+		manage.NewConnectionCount(s.IDTag())
+	}
 	go io.Copy(rewrite{w}, wr)
 	io.Copy(rw, r.Body)
+	if config.Manage > 0 {
+		manage.ConnectionCloseCount(s.id)
+	}
+
 }
 
 // Listen Listen

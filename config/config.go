@@ -28,6 +28,9 @@ var ConfigFile string
 // RouteCache RouteCache
 var RouteCache bool
 
+// Manage port
+var Manage int
+
 // InitConf InitConf
 func InitConf() {
 	configFile := flag.String("c", "/etc/awsl/config.json", "path to config file")
@@ -36,9 +39,11 @@ func InitConf() {
 	nostd := flag.Bool("nostd", false, "nostd")
 	routeCache := flag.Bool("rc", false, "route cache")
 	logFile := flag.String("l", "", "log file location")
+	manage := flag.Int("m", -1, "manage awsl")
 	flag.Parse()
 	Debug = *debug
 	UDP = *udp
+	Manage = *manage
 	RouteCache = *routeCache
 	confBytes, err := ioutil.ReadFile(filepath.FromSlash(*configFile))
 	if err != nil {

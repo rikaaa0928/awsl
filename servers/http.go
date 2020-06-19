@@ -9,7 +9,9 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/Evi1/awsl/config"
 	"github.com/Evi1/awsl/model"
+	"github.com/Evi1/awsl/servers/manage"
 	"github.com/Evi1/awsl/tools"
 )
 
@@ -85,8 +87,13 @@ func (s *HTTP) Listen() net.Listener {
 				//con := &httpConn{Conn: clientConn, CloseChan: make(chan int8), addr: addr}
 				con := &httpConn{Conn: clientConn, closeWait: tools.NewCloseWait(s.closeWait.Ctx), addr: addr}
 				s.Conns <- con
+				if config.Manage > 0 {
+					manage.NewConnectionCount(s.IDTag())
+				}
 				con.closeWait.WaitClose()
-				//<-con.CloseChan
+				if config.Manage > 0 {
+					manage.ConnectionCloseCount(s.id)
+				}
 			} else {
 				rHost := ""
 				rPort := 80
@@ -122,8 +129,13 @@ func (s *HTTP) Listen() net.Listener {
 
 				conn := &HTTPGetConn{W: w, R: r, addr: addr, closeWait: tools.NewCloseWait(s.closeWait.Ctx)}
 				s.Conns <- conn
-				//<-conn.CloseChan
+				if config.Manage > 0 {
+					manage.NewConnectionCount(s.IDTag())
+				}
 				conn.closeWait.WaitClose()
+				if config.Manage > 0 {
+					manage.ConnectionCloseCount(s.id)
+				}
 			}
 		}),
 	}
