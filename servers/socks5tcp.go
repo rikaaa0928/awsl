@@ -14,21 +14,25 @@ import (
 )
 
 // NewSocks5TCP NewSocks5TCP
-func NewSocks5TCP(listenHost string, listenPort string) Socke5TCPServer {
-	return Socke5TCPServer{
+func NewSocks5TCP(listenHost, listenPort, tag string, id int) Socks5TCP {
+	return Socks5TCP{
 		IP:   listenHost,
 		Port: listenPort,
+		id:   id,
+		tag:  tag,
 	}
 }
 
-// Socke5TCPServer socks5
-type Socke5TCPServer struct {
+// Socks5TCP socks5
+type Socks5TCP struct {
 	IP   string
 	Port string
+	tag  string
+	id   int
 }
 
 // Listen server
-func (s Socke5TCPServer) Listen() net.Listener {
+func (s Socks5TCP) Listen() net.Listener {
 	log.Println(s.IP + ":" + s.Port)
 	l, e := net.Listen("tcp", s.IP+":"+s.Port)
 	if e != nil {
@@ -38,7 +42,7 @@ func (s Socke5TCPServer) Listen() net.Listener {
 }
 
 // ReadRemote server
-func (s Socke5TCPServer) ReadRemote(c net.Conn) (model.ANetAddr, error) {
+func (s Socks5TCP) ReadRemote(c net.Conn) (model.ANetAddr, error) {
 	buf := tools.MemPool.Get(65536)
 	defer func() {
 		tools.MemPool.Put(buf)
@@ -75,6 +79,11 @@ func (s Socke5TCPServer) ReadRemote(c net.Conn) (model.ANetAddr, error) {
 		return addr, err
 	}
 	return addr, nil
+}
+
+// IDTag id and tag
+func (s Socks5TCP) IDTag() (int, string) {
+	return s.id, s.tag
 }
 
 func getRemoteHost5(data []byte) (s string, t int) {

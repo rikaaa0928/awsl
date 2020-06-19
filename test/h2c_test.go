@@ -1,7 +1,6 @@
 package test
 
 import (
-	"context"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -10,14 +9,9 @@ import (
 	"os"
 	"testing"
 	"time"
-
-	"github.com/Evi1/awsl/clients"
-	"github.com/Evi1/awsl/config"
-	"github.com/Evi1/awsl/model"
-	"github.com/Evi1/awsl/servers"
 )
 
-func TestH2C(t *testing.T) {
+/*func TestH2C(t *testing.T) {
 	config.Debug = true
 	conf := config.GetConf()
 	conf.NoVerify = true
@@ -65,7 +59,7 @@ func TestH2C(t *testing.T) {
 		i++
 		time.Sleep(time.Second)
 	}
-}
+}*/
 
 func TestClient(t *testing.T) {
 	url := "https://http2.golang.org/ECHO"

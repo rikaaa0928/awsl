@@ -11,10 +11,12 @@ import (
 )
 
 // NewTCP new tcp
-func NewTCP(listenHost, listenPort, auth string) *TCP {
+func NewTCP(listenHost, listenPort, auth, tag string, id int) *TCP {
 	return &TCP{IP: listenHost,
 		Port: listenPort,
-		Auth: auth}
+		Auth: auth,
+		tag:  tag,
+		id:   id}
 }
 
 // TCP TCP
@@ -22,6 +24,8 @@ type TCP struct {
 	IP   string
 	Port string
 	Auth string
+	tag  string
+	id   int
 }
 
 // Listen Listen
@@ -50,6 +54,11 @@ func (s *TCP) ReadRemote(c net.Conn) (model.ANetAddr, error) {
 		return model.ANetAddr{}, errors.New("Authentication failed : " + string(jsonBytes[:n]))
 	}
 	return a.ANetAddr, nil
+}
+
+// IDTag id and tag
+func (s *TCP) IDTag() (int, string) {
+	return s.id, s.tag
 }
 
 type cryptListenner struct {

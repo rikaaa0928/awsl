@@ -62,7 +62,7 @@ func TestNet(t *testing.T) {
 }
 
 func TestNum(t *testing.T) {
-	var n uint64 = 0
+	var n uint64
 	m := n - 1
 	t.Log(m)
 	t.Log(m + 1)

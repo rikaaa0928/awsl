@@ -14,4 +14,5 @@ var ErrUDP = errors.New("udp error")
 type Server interface {
 	Listen() net.Listener
 	ReadRemote(net.Conn) (model.ANetAddr, error)
+	IDTag() (int, string)
 }

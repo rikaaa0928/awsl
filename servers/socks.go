@@ -15,21 +15,25 @@ import (
 )
 
 // NewSocks NewSocks
-func NewSocks(listenHost string, listenPort string) SockeServer {
-	return SockeServer{
+func NewSocks(listenHost, listenPort, tag string, id int) Socks {
+	return Socks{
 		IP:   listenHost,
 		Port: listenPort,
+		id:   id,
+		tag:  tag,
 	}
 }
 
-// SockeServer socks5
-type SockeServer struct {
+// Socks socks5
+type Socks struct {
 	IP   string
 	Port string
+	tag  string
+	id   int
 }
 
 // Listen server
-func (s SockeServer) Listen() net.Listener {
+func (s Socks) Listen() net.Listener {
 	l, e := net.Listen("tcp", s.IP+":"+s.Port)
 	if e != nil {
 		panic(e)
@@ -39,12 +43,17 @@ func (s SockeServer) Listen() net.Listener {
 }
 
 // ReadRemote server
-func (s SockeServer) ReadRemote(c net.Conn) (model.ANetAddr, error) {
+func (s Socks) ReadRemote(c net.Conn) (model.ANetAddr, error) {
 	sc, ok := c.(socksConn)
 	if !ok {
 		return model.ANetAddr{}, errors.New("invalid connection type")
 	}
 	return sc.GetRemote(), nil
+}
+
+// IDTag id and tag
+func (s Socks) IDTag() (int, string) {
+	return s.id, s.tag
 }
 
 type socksListenner struct {

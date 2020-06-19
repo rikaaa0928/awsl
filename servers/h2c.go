@@ -15,17 +15,19 @@ import (
 )
 
 // NewH2C NewH2C
-func NewH2C(ctx context.Context, listenHost, listenPort, uri, auth, key, cert string, connsSize int) *H2C {
+func NewH2C(ctx context.Context, conf model.In, id int) *H2C {
 	return &H2C{
-		IP:        listenHost,
-		Port:      listenPort,
-		URI:       uri + "/",
-		Auth:      auth,
-		Key:       key,
-		Cert:      cert,
+		IP:        conf.Host,
+		Port:      conf.Port,
+		URI:       conf.Awsl.URI,
+		Auth:      conf.Awsl.Auth,
+		Cert:      conf.Awsl.Cert,
+		Key:       conf.Awsl.Key,
 		closeWait: tools.NewCloseWait(ctx),
+		id:        id,
+		tag:       conf.Tag,
 		//CloseChan: make(chan int8),
-		Conns: make(chan net.Conn, connsSize)}
+		Conns: make(chan net.Conn, conf.Awsl.Chan)}
 }
 
 // H2C H2C
@@ -36,6 +38,8 @@ type H2C struct {
 	Auth string
 	Cert string
 	Key  string
+	id   int
+	tag  string
 	//CloseChan chan int8
 	closeWait *tools.CloseWait
 	Conns     chan net.Conn
@@ -149,6 +153,11 @@ func (s *H2C) Accept() (net.Conn, error) {
 	case <-s.closeWait.WaitClose():
 	}
 	return nil, errors.New("h2c server closed")
+}
+
+// IDTag id and tag
+func (s *H2C) IDTag() (int, string) {
+	return s.id, s.tag
 }
 
 // Close Close

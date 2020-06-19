@@ -14,28 +14,32 @@ import (
 )
 
 // NewHTTP NewHTTP
-func NewHTTP(ctx context.Context, listenHost, listenPort string, connsSize int) *HTTPServer {
-	a := &HTTPServer{
-		IP:        listenHost,
-		Port:      listenPort,
-		Conns:     make(chan net.Conn, connsSize),
+func NewHTTP(ctx context.Context, conf model.In, id int) *HTTP {
+	a := &HTTP{
+		IP:        conf.Host,
+		Port:      conf.Port,
+		Conns:     make(chan net.Conn, conf.HTTP.Chan),
 		closeWait: tools.NewCloseWait(ctx),
+		id:        id,
+		tag:       conf.Tag,
 	}
 	return a
 }
 
-// HTTPServer HTTPServer
-type HTTPServer struct {
+// HTTP HTTP
+type HTTP struct {
 	IP        string
 	Port      string
 	Conns     chan net.Conn
 	Max       int
 	closeWait *tools.CloseWait
 	Srv       http.Server
+	id        int
+	tag       string
 }
 
 // Listen server
-func (s *HTTPServer) Listen() net.Listener {
+func (s *HTTP) Listen() net.Listener {
 	s.Srv = http.Server{
 		Addr: s.IP + ":" + s.Port,
 		Handler: http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -128,7 +132,7 @@ func (s *HTTPServer) Listen() net.Listener {
 }
 
 // ReadRemote server
-func (s *HTTPServer) ReadRemote(c net.Conn) (model.ANetAddr, error) {
+func (s *HTTP) ReadRemote(c net.Conn) (model.ANetAddr, error) {
 	conn, ok := c.(model.AWSLConn)
 	if !ok {
 		return model.ANetAddr{}, errors.New("conn not httpConn")
@@ -136,8 +140,13 @@ func (s *HTTPServer) ReadRemote(c net.Conn) (model.ANetAddr, error) {
 	return conn.GetAddr(), nil
 }
 
+// IDTag id and tag
+func (s *HTTP) IDTag() (int, string) {
+	return s.id, s.tag
+}
+
 // Accept Accept
-func (s *HTTPServer) Accept() (net.Conn, error) {
+func (s *HTTP) Accept() (net.Conn, error) {
 	select {
 	case conn := <-s.Conns:
 		return conn, nil
@@ -147,13 +156,13 @@ func (s *HTTPServer) Accept() (net.Conn, error) {
 }
 
 // Close Close
-func (s *HTTPServer) Close() error {
+func (s *HTTP) Close() error {
 	s.closeWait.Close()
 	return s.Srv.Shutdown(context.Background())
 }
 
 // Addr Addr
-func (s *HTTPServer) Addr() net.Addr {
+func (s *HTTP) Addr() net.Addr {
 	return &net.IPAddr{
 		IP:   net.ParseIP(s.IP),
 		Zone: "",

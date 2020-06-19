@@ -13,7 +13,24 @@ import (
 )
 
 // NewAWSL NewAWSL
-func NewAWSL(ctx context.Context, listenHost, listenPort, uri, auth, key, cert string, connsSize int) *AWSL {
+func NewAWSL(ctx context.Context, conf model.In, id int) *AWSL {
+	a := &AWSL{
+		IP:    conf.Host,
+		Port:  conf.Port,
+		URI:   conf.Awsl.URI,
+		Auth:  conf.Awsl.Auth,
+		Conns: make(chan net.Conn, conf.Awsl.Chan),
+		Cert:  conf.Awsl.Cert,
+		Key:   conf.Awsl.Key,
+		id:    id,
+		tag:   conf.Tag,
+		//CloseChan: make(chan int8),
+		closeWait: tools.NewCloseWait(ctx),
+	}
+	return a
+}
+
+/*func NewAWSL(ctx context.Context, listenHost, listenPort, uri, auth, key, cert string, connsSize int) *AWSL {
 	a := &AWSL{
 		IP:    listenHost,
 		Port:  listenPort,
@@ -26,7 +43,7 @@ func NewAWSL(ctx context.Context, listenHost, listenPort, uri, auth, key, cert s
 		closeWait: tools.NewCloseWait(ctx),
 	}
 	return a
-}
+}*/
 
 // AWSL AWSL
 type AWSL struct {
@@ -37,9 +54,10 @@ type AWSL struct {
 	// Listener *AWSListener
 	Cert  string
 	Key   string
-	Max   int
 	Conns chan net.Conn
 	Srv   http.Server
+	id    int
+	tag   string
 	//CloseChan chan int8
 	closeWait *tools.CloseWait
 }
@@ -100,6 +118,11 @@ func (s *AWSL) ReadRemote(c net.Conn) (model.ANetAddr, error) {
 		return model.ANetAddr{}, errors.New("Authentication failed : " + string(jsonBytes[:n]))
 	}
 	return a.ANetAddr, nil
+}
+
+// IDTag id and tag
+func (s *AWSL) IDTag() (int, string) {
+	return s.id, s.tag
 }
 
 // AWSListener listener
