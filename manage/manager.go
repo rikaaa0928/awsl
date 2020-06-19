@@ -1,8 +1,6 @@
 package manage
 
 import (
-	"encoding/json"
-	"log"
 	"net/http"
 	"strconv"
 	"strings"
@@ -27,13 +25,11 @@ func connectionNums(w http.ResponseWriter, uri string, isServer bool) {
 	uri = strings.TrimPrefix(uri, end)
 	if len(uri) == 0 {
 		var sum int64
-		cnmBytes, err := json.Marshal(cnm)
-		if err != nil {
-			log.Panic(err)
-		}
-		res := string(cnmBytes) + " , "
-		for _, v := range cnm {
+		res := ""
+		for k, v := range cnm {
+			n := v.Get()
 			sum += v.Get()
+			res += strconv.Itoa(k) + " : " + strconv.FormatInt(n, 10) + " , "
 		}
 		res += strconv.FormatInt(sum, 10)
 		w.Write([]byte(res))
