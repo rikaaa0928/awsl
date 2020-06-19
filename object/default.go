@@ -11,6 +11,7 @@ import (
 	"github.com/Evi1/awsl/clients"
 	"github.com/Evi1/awsl/config"
 	"github.com/Evi1/awsl/model"
+	"github.com/Evi1/awsl/object/manage"
 	"github.com/Evi1/awsl/router"
 	"github.com/Evi1/awsl/servers"
 	"github.com/Evi1/awsl/tools"
@@ -78,6 +79,7 @@ func (o *DefaultObject) handelOneClient(i int) {
 		select {
 		case m := <-o.Msg[i]:
 			go func() {
+				// dial
 				c, err := o.C[i].Dial(m.a)
 				if err != nil {
 					if len(m.rs) > 0 {
@@ -91,8 +93,21 @@ func (o *DefaultObject) handelOneClient(i int) {
 						return
 					}
 					m.c.Close()
+					manage.ConnectionCloseCount(true, m.src)
 					log.Println("client Dial error. client no.", i, " error = ", err)
 					return
+				}
+				// manage client
+				if config.Manage > 0 {
+					id, tag := o.C[i].IDTag()
+					if id != i {
+						log.Panic("manage id error!", i, id)
+					}
+					manage.NewConnectionCount(false, id, tag)
+					defer func() {
+						manage.ConnectionCloseCount(true, m.src)
+						manage.ConnectionCloseCount(false, id)
+					}()
 				}
 				// temp route
 				tr, ok := o.R.(router.TempRoute)
@@ -121,11 +136,11 @@ func (o *DefaultObject) handelOneClient(i int) {
 					hc.W.WriteHeader(resp.StatusCode)
 					io.Copy(hc.W, resp.Body)
 					hc.Close()
+					m.c.Close()
 				} else {
 					go tools.PipeThenClose(m.c, c)
 					tools.PipeThenClose(c, m.c)
 				}
-
 			}()
 		case <-o.closeWait.WaitClose():
 			o.stop = true
@@ -166,6 +181,7 @@ func (o *DefaultObject) handelOneServer(i int, w *sync.WaitGroup) {
 			rs := o.R.Route(i, addr)
 			if len(rs) == 0 {
 				log.Printf("Fatal error, no route for %d, %s.\n", i, addr.Host)
+				c.Close()
 				return
 			}
 			r := rs[0]
@@ -174,6 +190,14 @@ func (o *DefaultObject) handelOneServer(i int, w *sync.WaitGroup) {
 				r = 0
 			}
 			o.Msg[r] <- DefaultRemoteMsg{c: c, a: addr, rs: rs, src: i}
+			// manage server
+			if config.Manage > 0 {
+				id, tag := o.S[i].IDTag()
+				if id != i {
+					log.Panic("manage id error!", i, id)
+				}
+				manage.NewConnectionCount(true, id, tag)
+			}
 		}()
 	}
 	l.Close()

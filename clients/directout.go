@@ -1,13 +1,17 @@
 package clients
 
 import (
-	"github.com/Evi1/awsl/model"
 	"net"
 	"strconv"
+
+	"github.com/Evi1/awsl/model"
 )
 
 // DirectOut DirectOut
-type DirectOut struct{}
+type DirectOut struct {
+	id  int
+	tag string
+}
 
 // Dial Dial
 func (c DirectOut) Dial(addr model.ANetAddr) (net.Conn, error) {
@@ -21,4 +25,9 @@ func (c DirectOut) Dial(addr model.ANetAddr) (net.Conn, error) {
 // Verify Verify
 func (c DirectOut) Verify(_ net.Conn) error {
 	return nil
+}
+
+// IDTag id tag
+func (c DirectOut) IDTag() (int, string) {
+	return c.id, c.tag
 }

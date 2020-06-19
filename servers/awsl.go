@@ -7,9 +7,7 @@ import (
 	"net"
 	"net/http"
 
-	"github.com/Evi1/awsl/config"
 	"github.com/Evi1/awsl/model"
-	"github.com/Evi1/awsl/servers/manage"
 	"github.com/Evi1/awsl/tools"
 	"golang.org/x/net/websocket"
 )
@@ -72,14 +70,7 @@ func (s *AWSL) awslHandler(conn *websocket.Conn) {
 	}
 
 	s.Conns <- ac
-	if config.Manage > 0 {
-		manage.NewConnectionCount(s.IDTag())
-	}
-	//<-ac.CloseChan
 	ac.closeWait.WaitClose()
-	if config.Manage > 0 {
-		manage.ConnectionCloseCount(s.id)
-	}
 }
 
 // Listen server

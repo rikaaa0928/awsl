@@ -14,30 +14,28 @@ import (
 )
 
 // NewAWSL NewAWSL
-func NewAWSL(serverHost, serverPort, uri, auth string, backup []string) *AWSL {
-	wsConfig, err := websocket.NewConfig("wss://"+serverHost+":"+serverPort+"/"+uri, "https://"+serverHost+":"+serverPort+"/")
+func NewAWSL(id int, conf model.Out) *AWSL {
+	wsConfig, err := websocket.NewConfig("wss://"+conf.Awsl.Host+":"+conf.Awsl.Port+"/"+conf.Awsl.URI, "https://"+conf.Awsl.Host+":"+conf.Awsl.Port+"/")
 	if err != nil {
-		//log.Println("conf:" + err.Error())
 		panic(err)
 	}
-	/*wsConfig.TlsConfig = &tls.Config{
-		InsecureSkipVerify: config.GetConf().NoVerify,
-		ServerName:         c.ServerHost,
-	}*/
 	m := make(map[string][]string)
-	hp := net.JoinHostPort(serverHost, serverPort)
+	hp := net.JoinHostPort(conf.Awsl.Host, conf.Awsl.Port)
 	m[hp] = []string{hp}
+	backup := conf.Awsl.BackUp
 	if backup != nil {
 		m[hp] = append(m[hp], backup...)
 	}
 	d := &dialer.MultiAddr{Hosts: m, HostInUse: make(map[string]uint)}
 	return &AWSL{
-		ServerHost: serverHost,
-		ServerPort: serverPort,
-		URI:        uri,
-		Auth:       auth,
+		ServerHost: conf.Awsl.Host,
+		ServerPort: conf.Awsl.Port,
+		URI:        conf.Awsl.URI,
+		Auth:       conf.Awsl.Auth,
 		wsConfig:   wsConfig,
 		mDialer:    d,
+		id:         id,
+		tag:        conf.Tag,
 	}
 }
 
@@ -47,6 +45,8 @@ type AWSL struct {
 	ServerPort string
 	URI        string
 	Auth       string
+	id         int
+	tag        string
 	wsConfig   *websocket.Config
 	mDialer    *dialer.MultiAddr
 }
@@ -91,6 +91,11 @@ func (c *AWSL) Verify(conn net.Conn) error {
 	}
 	_, err = ws.Write(addrBytes)
 	return err
+}
+
+// IDTag id tag
+func (c *AWSL) IDTag() (int, string) {
+	return c.id, c.tag
 }
 
 type awslConn struct {

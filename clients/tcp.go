@@ -12,15 +12,15 @@ import (
 )
 
 // NewTCP NewTCP
-func NewTCP(host, port, auth string, backup []string) *TCP {
+func NewTCP(id int, conf model.Out) *TCP {
 	m := make(map[string][]string)
-	hp := net.JoinHostPort(host, port)
+	hp := net.JoinHostPort(conf.TCP.Host, conf.TCP.Port)
 	m[hp] = []string{hp}
-	if backup != nil {
-		m[hp] = append(m[hp], backup...)
+	if conf.TCP.BackUp != nil {
+		m[hp] = append(m[hp], conf.TCP.BackUp...)
 	}
 	d := &dialer.MultiAddr{Hosts: m, HostInUse: make(map[string]uint)}
-	return &TCP{ServerHost: host, ServerPort: port, Auth: auth, Dialer: d}
+	return &TCP{ServerHost: conf.TCP.Host, ServerPort: conf.TCP.Port, Auth: conf.TCP.Auth, Dialer: d}
 }
 
 // TCP tcp
@@ -28,6 +28,8 @@ type TCP struct {
 	ServerHost string
 	ServerPort string
 	Auth       string
+	id         int
+	tag        string
 	Dialer     *dialer.MultiAddr
 }
 
@@ -57,6 +59,11 @@ func (c *TCP) Verify(conn net.Conn) error {
 	_, err = ws.Write(addrBytes)
 	time.Sleep(10 * time.Millisecond)
 	return err
+}
+
+// IDTag id tag
+func (c *TCP) IDTag() (int, string) {
+	return c.id, c.tag
 }
 
 type cryptConn struct {

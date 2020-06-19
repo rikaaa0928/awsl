@@ -18,10 +18,11 @@ import (
 )
 
 // NewH2C NewH2C
-func NewH2C(serverHost, serverPort, uri, auth string, backup []string) *H2C {
+func NewH2C(id int, conf model.Out) *H2C {
 	m := make(map[string][]string)
-	hp := net.JoinHostPort(serverHost, serverPort)
+	hp := net.JoinHostPort(conf.Awsl.Host, conf.Awsl.Port)
 	m[hp] = []string{hp}
+	backup := conf.Awsl.BackUp
 	if backup != nil {
 		m[hp] = append(m[hp], backup...)
 	}
@@ -39,10 +40,12 @@ func NewH2C(serverHost, serverPort, uri, auth string, backup []string) *H2C {
 	}
 	c.Transport = trans
 	return &H2C{
-		ServerHost: serverHost,
-		ServerPort: serverPort,
-		URI:        uri,
-		Auth:       &http.Cookie{Name: "pw", Value: auth},
+		ServerHost: conf.Awsl.Host,
+		ServerPort: conf.Awsl.Port,
+		URI:        conf.Awsl.URI,
+		Auth:       &http.Cookie{Name: "pw", Value: conf.Awsl.Auth},
+		id:         id,
+		tag:        conf.Tag,
 		Client:     c}
 }
 
@@ -51,6 +54,8 @@ type H2C struct {
 	ServerHost string
 	ServerPort string
 	URI        string
+	id         int
+	tag        string
 	Auth       *http.Cookie
 	Client     *http.Client
 }
@@ -84,6 +89,11 @@ func (c *H2C) Dial(addr model.ANetAddr) (net.Conn, error) {
 // Verify Verify
 func (c *H2C) Verify(conn net.Conn) error {
 	return nil
+}
+
+// IDTag id tag
+func (c *H2C) IDTag() (int, string) {
+	return c.id, c.tag
 }
 
 type h2cConn struct {
