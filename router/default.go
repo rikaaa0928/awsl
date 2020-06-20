@@ -1,6 +1,7 @@
 package router
 
 import (
+	"encoding/json"
 	"io/ioutil"
 	"log"
 	"strconv"
@@ -180,19 +181,6 @@ func (r *ARouter) Route(src int, addr model.ANetAddr) []int {
 			}
 		}
 		if ruleList.Include(host) {
-			//fmt.Println(ruleList)
-			/*outIDs := make([]int, 0, len(v.OutTags))
-			for _, outTag := range v.OutTags {
-				outID, ok := r.OutMap[outTag]
-				if !ok {
-					return []int{0}
-				}
-				outIDs = append(outIDs, outID)
-			}
-			r.CLock.Lock()
-			defer r.CLock.Unlock()
-			r.Cache[strconv.Itoa(src)+"-"+addr.Host] = routeCache{data: outIDs, lastTime: time.Now(), timeOut: 6 * time.Hour}
-			return outIDs*/
 			return r.parse(v.OutTags, strconv.Itoa(src)+"-"+addr.Host)
 		}
 	}
@@ -230,4 +218,28 @@ func (r *ARouter) TempRoute(src int, addr model.ANetAddr, outID int) {
 	r.CLock.Lock()
 	defer r.CLock.Unlock()
 	r.Cache[strconv.Itoa(src)+"-"+addr.Host] = routeCache{data: []int{outID}, lastTime: time.Now(), timeOut: 10 * time.Minute}
+}
+
+// GetCache get cache
+func (r *ARouter) GetCache(src int) (res string) {
+	r.CLock.Lock()
+	defer r.CLock.Unlock()
+
+	newMap := make(map[string][]int)
+	for k, v := range r.Cache {
+		if src < 0 {
+			newMap[k] = v.data
+			continue
+		}
+		sp := strings.SplitN(k, "-", 2)
+		if sp[0] == strconv.Itoa(src) {
+			newMap[sp[1]] = v.data
+		}
+	}
+	resBytes, err := json.MarshalIndent(newMap, " ", "  ")
+	if err != nil {
+		return err.Error()
+	}
+	res += string(resBytes)
+	return
 }

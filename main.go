@@ -7,7 +7,7 @@ import (
 )
 
 func main() {
-	go manage.Manage()
 	o := object.NewObject(*config.GetConf())
+	go manage.Manage(o)
 	o.Run()
 }

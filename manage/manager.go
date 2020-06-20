@@ -6,12 +6,16 @@ import (
 	"strings"
 
 	"github.com/Evi1/awsl/config"
+	"github.com/Evi1/awsl/object"
 	om "github.com/Evi1/awsl/object/manage"
 )
 
 var connectionNum = "cnum/"
+var routerCache = "routercache/"
 var serverSide = "server/"
 var clientSide = "client/"
+
+var obj object.Object
 
 func connectionNums(w http.ResponseWriter, uri string, isServer bool) {
 	cnm := om.ServerConnectionNumber
@@ -36,8 +40,28 @@ func connectionNums(w http.ResponseWriter, uri string, isServer bool) {
 	}
 }
 
+func routerCaches(w http.ResponseWriter, uri string) {
+	uri = strings.TrimPrefix(uri, routerCache)
+	if len(uri) == 0 {
+		if o, ok := obj.(*object.DefaultObject); ok {
+			res := o.R.GetCache(-1)
+			w.Write([]byte(res))
+			return
+		}
+	}
+	src, err := strconv.Atoi(uri)
+	if err != nil {
+		w.Write([]byte(err.Error()))
+	}
+	if o, ok := obj.(*object.DefaultObject); ok {
+		res := o.R.GetCache(src)
+		w.Write([]byte(res))
+	}
+}
+
 // Manage manage
-func Manage() {
+func Manage(o object.Object) {
+	obj = o
 	http.ListenAndServe(":"+strconv.Itoa(config.Manage), http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		uri := r.RequestURI
 		uri = strings.TrimPrefix(uri, "/")
@@ -50,6 +74,9 @@ func Manage() {
 				connectionNums(w, uri, false)
 				return
 			}
+		} else if strings.HasPrefix(uri, routerCache) {
+			routerCaches(w, uri)
+			return
 		}
 		w.Write([]byte(uri))
 	}))

@@ -129,6 +129,7 @@ func (o *DefaultObject) handelOneClient(i int) {
 					resp, err := trans.RoundTrip(hc.R)
 					if err != nil {
 						http.Error(hc.W, err.Error(), http.StatusServiceUnavailable)
+						log.Println("object http roudtrip error", m.a, err)
 						return
 					}
 					defer resp.Body.Close()
