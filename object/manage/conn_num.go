@@ -27,7 +27,7 @@ func NewConnectionCount(isServer bool, id int, tag string) {
 func ccc(cns map[int]connNum, id int) {
 	cn, ok := cns[id]
 	if !ok {
-		log.Panic("connection close count id error" + strconv.Itoa(id))
+		log.Panic("connection close count id error. id:" + strconv.Itoa(id))
 	}
 	cn.Add(-1)
 }

@@ -93,7 +93,9 @@ func (o *DefaultObject) handelOneClient(i int) {
 						return
 					}
 					m.c.Close()
-					manage.ConnectionCloseCount(true, m.src)
+					if config.Manage > 0 {
+						manage.ConnectionCloseCount(true, m.src)
+					}
 					log.Println("client Dial error. client no.", i, " error = ", err)
 					return
 				}
