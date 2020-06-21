@@ -20,6 +20,7 @@ func ncc(cns map[int]connNum, id int, tag string) {
 func NewConnectionCount(isServer bool, id int, tag string) {
 	if isServer {
 		ncc(ServerConnectionNumber, id, tag)
+		return
 	}
 	ncc(ClientConnectionNumber, id, tag)
 }
@@ -36,6 +37,7 @@ func ccc(cns map[int]connNum, id int) {
 func ConnectionCloseCount(isServer bool, id int) {
 	if isServer {
 		ccc(ServerConnectionNumber, id)
+		return
 	}
 	ccc(ClientConnectionNumber, id)
 }
