@@ -10,6 +10,7 @@ import (
 	om "github.com/Evi1/awsl/object/manage"
 )
 
+var base = "/manage/"
 var connectionNum = "cnum/"
 var routerCache = "routercache/"
 var serverSide = "server/"
@@ -64,7 +65,11 @@ func Manage(o object.Object) {
 	obj = o
 	http.ListenAndServe(":"+strconv.Itoa(config.Manage), http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		uri := r.RequestURI
-		uri = strings.TrimPrefix(uri, "/")
+		if !strings.HasPrefix(uri, base) {
+			w.Write([]byte(uri))
+			return
+		}
+		uri = strings.TrimPrefix(uri, base)
 		if strings.HasPrefix(uri, connectionNum) {
 			uri = strings.TrimPrefix(uri, connectionNum)
 			if strings.HasPrefix(uri, serverSide) {
