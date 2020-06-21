@@ -70,7 +70,8 @@ func (s *AWSL) awslHandler(conn *websocket.Conn) {
 	}
 
 	s.Conns <- ac
-	ac.closeWait.WaitClose()
+	//<-ac.CloseChan
+	<-ac.closeWait.WaitClose()
 }
 
 // Listen server
@@ -170,6 +171,7 @@ func (c *awslConn) Close() error {
 		recover()
 	}()*/
 	err := c.Conn.Close()
+	//close(c.CloseChan)
 	c.closeWait.Close()
 	return err
 }

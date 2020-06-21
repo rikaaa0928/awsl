@@ -109,7 +109,7 @@ func (s *H2C) serve(w http.ResponseWriter, r *http.Request) {
 // Listen Listen
 func (s *H2C) Listen() net.Listener {
 	mux := http.NewServeMux()
-	mux.HandleFunc("/"+s.URI, s.serve)
+	mux.HandleFunc("/"+s.URI+"/", s.serve)
 	s.Srv = http.Server{Addr: s.IP + ":" + s.Port, Handler: mux}
 	/*var srv http.Server
 	srv.Handler = mux

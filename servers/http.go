@@ -86,7 +86,7 @@ func (s *HTTP) Listen() net.Listener {
 				con := &httpConn{Conn: clientConn, closeWait: tools.NewCloseWait(s.closeWait.Ctx), addr: addr}
 				s.Conns <- con
 
-				con.closeWait.WaitClose()
+				<-con.closeWait.WaitClose()
 			} else {
 				rHost := ""
 				rPort := 80
@@ -123,7 +123,7 @@ func (s *HTTP) Listen() net.Listener {
 				conn := &HTTPGetConn{W: w, R: r, addr: addr, closeWait: tools.NewCloseWait(s.closeWait.Ctx)}
 				s.Conns <- conn
 
-				conn.closeWait.WaitClose()
+				<-conn.closeWait.WaitClose()
 			}
 		}),
 	}
