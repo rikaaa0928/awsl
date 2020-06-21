@@ -34,9 +34,9 @@ func connectionNums(w http.ResponseWriter, uri string, isServer bool) {
 		for k, v := range cnm {
 			n := v.Get()
 			sum += v.Get()
-			res += strconv.Itoa(k) + " : " + strconv.FormatInt(n, 10) + " , "
+			res += strconv.Itoa(k) + "-" + v.Tag + " : " + strconv.FormatInt(n, 10) + " , "
 		}
-		res += strconv.FormatInt(sum, 10)
+		res += "sum : " + strconv.FormatInt(sum, 10)
 		w.Write([]byte(res))
 	}
 }
