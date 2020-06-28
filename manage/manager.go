@@ -1,6 +1,7 @@
 package manage
 
 import (
+	"encoding/json"
 	"net/http"
 	"strconv"
 	"strings"
@@ -18,6 +19,11 @@ var clientSide = "client/"
 
 var obj object.Object
 
+type sConnNum struct {
+	Tag string
+	Num int64
+}
+
 func connectionNums(w http.ResponseWriter, uri string, isServer bool) {
 	cnm := om.ServerConnectionNumber
 	if !isServer {
@@ -28,17 +34,36 @@ func connectionNums(w http.ResponseWriter, uri string, isServer bool) {
 		end = clientSide
 	}
 	uri = strings.TrimPrefix(uri, end)
+	res := make(map[int]sConnNum, 0)
 	if len(uri) == 0 {
 		var sum int64
-		res := ""
+		//res := ""
 		for k, v := range cnm {
 			n := v.Get()
-			sum += v.Get()
-			res += strconv.Itoa(k) + "-" + v.Tag + " : " + strconv.FormatInt(n, 10) + " , "
+			sum += n
+			//res += strconv.Itoa(k) + "-" + v.Tag + " : " + strconv.FormatInt(n, 10) + " , "
+			res[k] = sConnNum{Tag: v.Tag, Num: n}
 		}
-		res += "sum : " + strconv.FormatInt(sum, 10)
-		w.Write([]byte(res))
+		//res += "sum : " + strconv.FormatInt(sum, 10)
+		res[-1] = sConnNum{Tag: "sum", Num: sum}
+		resBytes, err := json.MarshalIndent(res, "", "  ")
+		if err != nil {
+			w.Write([]byte(err.Error() + "\n"))
+		}
+		w.Write(resBytes)
+		return
 	}
+	id, err := strconv.Atoi(uri)
+	if err != nil {
+		w.Write([]byte(err.Error() + "\n"))
+		return
+	}
+	num, ok := cnm[id]
+	if !ok {
+		w.Write([]byte("no id : " + strconv.Itoa(id)))
+		return
+	}
+	w.Write([]byte(strconv.FormatInt(num.Counter.Get(), 10)))
 }
 
 func routerCaches(w http.ResponseWriter, uri string) {
