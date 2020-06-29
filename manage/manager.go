@@ -87,6 +87,9 @@ func routerCaches(w http.ResponseWriter, uri string) {
 
 // Manage manage
 func Manage(o object.Object) {
+	if config.Manage <= 0 {
+		return
+	}
 	obj = o
 	http.ListenAndServe(":"+strconv.Itoa(config.Manage), http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		uri := r.RequestURI
