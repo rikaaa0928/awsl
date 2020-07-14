@@ -141,8 +141,14 @@ func (o *DefaultObject) handelOneClient(i int) {
 					hc.Close()
 					m.c.Close()
 				} else {
-					go tools.PipeThenClose(m.c, c)
-					tools.PipeThenClose(c, m.c)
+					if config.Manage > 0 {
+						go manage.PipLine.PipeThenClose(m.c, c, false, m.src, net.JoinHostPort(m.a.Host, strconv.Itoa(m.a.Port)))
+						manage.PipLine.PipeThenClose(c, m.c, true, m.src, net.JoinHostPort(m.a.Host, strconv.Itoa(m.a.Port)))
+					} else {
+						go tools.PipeThenClose(m.c, c)
+						tools.PipeThenClose(c, m.c)
+					}
+
 				}
 			}()
 		case <-o.closeWait.WaitClose():

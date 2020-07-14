@@ -1,6 +1,7 @@
 package tools
 
 import (
+	"io"
 	"net"
 	"time"
 )
@@ -19,8 +20,8 @@ func PipeThenClose(src, dst net.Conn) {
 	buf := MemPool.Get(65536)
 	defer MemPool.Put(buf)
 
-	// io.CopyBuffer(dst, src, buf)
-	for {
+	io.CopyBuffer(dst, src, buf)
+	/*for {
 		// SetReadTimeout(src, 3*time.Second)
 		n, err := src.Read(buf)
 		if n > 0 {
@@ -31,5 +32,5 @@ func PipeThenClose(src, dst net.Conn) {
 		if err != nil {
 			break
 		}
-	}
+	}*/
 }
