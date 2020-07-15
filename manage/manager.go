@@ -19,6 +19,7 @@ var serverFlow = "serverflow/"
 
 var serverSide = "server/"
 var clientSide = "client/"
+var history = "history/"
 
 var obj object.Object
 
@@ -91,7 +92,17 @@ func handleRouterCache(w http.ResponseWriter, uri string) {
 func handleServerFlow(w http.ResponseWriter, uri string) {
 	uri = strings.TrimPrefix(uri, serverFlow)
 	if len(uri) == 0 {
-		res := om.OFlowManager.GetRoot()
+		res := om.ServerFlowManager.GetRoot()
+		w.Write([]byte(res))
+		return
+	}
+	if strings.HasPrefix(uri, history) {
+		uri = strings.TrimPrefix(uri, history)
+		src, err := strconv.Atoi(uri)
+		if err != nil {
+			w.Write([]byte(err.Error()))
+		}
+		res := om.ServerFlowManager.GetIDHistory(src)
 		w.Write([]byte(res))
 		return
 	}
@@ -99,7 +110,7 @@ func handleServerFlow(w http.ResponseWriter, uri string) {
 	if err != nil {
 		w.Write([]byte(err.Error()))
 	}
-	res := om.OFlowManager.GetID(src)
+	res := om.ServerFlowManager.GetID(src)
 	w.Write([]byte(res))
 }
 

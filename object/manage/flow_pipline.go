@@ -10,7 +10,7 @@ import (
 var PipLine sPipLine
 
 func init() {
-	PipLine.manager = OFlowManager
+	PipLine.manager = ServerFlowManager
 
 }
 
