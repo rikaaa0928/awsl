@@ -12,10 +12,14 @@ import (
 )
 
 var base = "/manage/"
+
 var connectionNum = "cnum/"
 var routerCache = "routercache/"
+var serverFlow = "serverflow/"
+
 var serverSide = "server/"
 var clientSide = "client/"
+var history = "history/"
 
 var obj object.Object
 
@@ -24,7 +28,7 @@ type sConnNum struct {
 	Num int64
 }
 
-func connectionNums(w http.ResponseWriter, uri string, isServer bool) {
+func handleConnectionNums(w http.ResponseWriter, uri string, isServer bool) {
 	cnm := om.ServerConnectionNumber
 	if !isServer {
 		cnm = om.ClientConnectionNumber
@@ -66,7 +70,7 @@ func connectionNums(w http.ResponseWriter, uri string, isServer bool) {
 	w.Write([]byte(strconv.FormatInt(num.Counter.Get(), 10)))
 }
 
-func routerCaches(w http.ResponseWriter, uri string) {
+func handleRouterCache(w http.ResponseWriter, uri string) {
 	uri = strings.TrimPrefix(uri, routerCache)
 	if len(uri) == 0 {
 		if o, ok := obj.(*object.DefaultObject); ok {
@@ -85,6 +89,31 @@ func routerCaches(w http.ResponseWriter, uri string) {
 	}
 }
 
+func handleServerFlow(w http.ResponseWriter, uri string) {
+	uri = strings.TrimPrefix(uri, serverFlow)
+	if len(uri) == 0 {
+		res := om.ServerFlowManager.GetRoot()
+		w.Write([]byte(res))
+		return
+	}
+	if strings.HasPrefix(uri, history) {
+		uri = strings.TrimPrefix(uri, history)
+		src, err := strconv.Atoi(uri)
+		if err != nil {
+			w.Write([]byte(err.Error()))
+		}
+		res := om.ServerFlowManager.GetIDHistory(src)
+		w.Write([]byte(res))
+		return
+	}
+	src, err := strconv.Atoi(uri)
+	if err != nil {
+		w.Write([]byte(err.Error()))
+	}
+	res := om.ServerFlowManager.GetID(src)
+	w.Write([]byte(res))
+}
+
 // Manage manage
 func Manage(o object.Object) {
 	if config.Manage <= 0 {
@@ -101,14 +130,17 @@ func Manage(o object.Object) {
 		if strings.HasPrefix(uri, connectionNum) {
 			uri = strings.TrimPrefix(uri, connectionNum)
 			if strings.HasPrefix(uri, serverSide) {
-				connectionNums(w, uri, true)
+				handleConnectionNums(w, uri, true)
 				return
 			} else if strings.HasPrefix(uri, clientSide) {
-				connectionNums(w, uri, false)
+				handleConnectionNums(w, uri, false)
 				return
 			}
 		} else if strings.HasPrefix(uri, routerCache) {
-			routerCaches(w, uri)
+			handleRouterCache(w, uri)
+			return
+		} else if strings.HasPrefix(uri, serverFlow) {
+			handleServerFlow(w, uri)
 			return
 		}
 		w.Write([]byte(uri))
