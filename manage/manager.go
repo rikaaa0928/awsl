@@ -96,16 +96,6 @@ func handleServerFlow(w http.ResponseWriter, uri string) {
 		w.Write([]byte(res))
 		return
 	}
-	if strings.HasPrefix(uri, history) {
-		uri = strings.TrimPrefix(uri, history)
-		src, err := strconv.Atoi(uri)
-		if err != nil {
-			w.Write([]byte(err.Error()))
-		}
-		res := om.ServerFlowManager.GetIDHistory(src)
-		w.Write([]byte(res))
-		return
-	}
 	src, err := strconv.Atoi(uri)
 	if err != nil {
 		w.Write([]byte(err.Error()))

@@ -14,15 +14,19 @@ import (
 // ServerFlowManager ServerFlowManager
 var ServerFlowManager *SFlowManager
 
-var limit int
+//var limit int
 
 func init() {
-	limit = int(30 * 24 * time.Hour / time.Second)
+	//limit = int(time.Hour / time.Second)
 	ServerFlowManager = &SFlowManager{in: make(map[int]map[string]*tools.Counter),
-		out:        make(map[int]map[string]*tools.Counter),
-		inHistory:  make(map[int]map[string][]uint64, 0),
-		outHistory: make(map[int]map[string][]uint64, 0),
-		lock:       sync.RWMutex{}}
+		out: make(map[int]map[string]*tools.Counter),
+		//inHistory:  make(map[int]map[string][]uint64, 0),
+		//outHistory: make(map[int]map[string][]uint64, 0),
+		inSum:     make(map[int]map[string]uint64),
+		outSum:    make(map[int]map[string]uint64),
+		inSecond:  make(map[int]map[string]uint64),
+		outSecond: make(map[int]map[string]uint64),
+		lock:      sync.RWMutex{}}
 	config.GetConf()
 	if config.Manage > 0 {
 		go ServerFlowManager.Tick()
@@ -31,23 +35,28 @@ func init() {
 
 // SFlowManager SFlowManager
 type SFlowManager struct {
-	in         map[int]map[string]*tools.Counter
-	out        map[int]map[string]*tools.Counter
-	inHistory  map[int]map[string][]uint64
-	outHistory map[int]map[string][]uint64
-	inSum      uint64
-	outSum     uint64
-	lock       sync.RWMutex
+	in        map[int]map[string]*tools.Counter
+	out       map[int]map[string]*tools.Counter
+	inSecond  map[int]map[string]uint64
+	outSecond map[int]map[string]uint64
+	inSum     map[int]map[string]uint64
+	outSum    map[int]map[string]uint64
+	//inHistory  map[int]map[string][]uint64
+	//outHistory map[int]map[string][]uint64
+	allInSum  uint64
+	allOutSum uint64
+	lock      sync.RWMutex
 }
 
-func (fm *SFlowManager) add(id int, host string, count int64, m map[int]map[string]*tools.Counter, history map[int]map[string][]uint64) {
+func (fm *SFlowManager) add(id int, host string, count int64, m map[int]map[string]*tools.Counter, sum map[int]map[string]uint64, second map[int]map[string]uint64) {
 	hostMap, ok := m[id]
 	if !ok {
 		fm.lock.Lock()
 		hostMap, ok = m[id]
 		if !ok {
 			m[id] = make(map[string]*tools.Counter)
-			history[id] = make(map[string][]uint64)
+			sum[id] = make(map[string]uint64)
+			second[id] = make(map[string]uint64)
 			hostMap = m[id]
 		}
 		fm.lock.Unlock()
@@ -58,7 +67,6 @@ func (fm *SFlowManager) add(id int, host string, count int64, m map[int]map[stri
 		counter, ok = hostMap[host]
 		if !ok {
 			hostMap[host] = tools.NewCounter()
-			history[id][host] = make([]uint64, 0)
 			counter = hostMap[host]
 		}
 		fm.lock.Unlock()
@@ -68,17 +76,17 @@ func (fm *SFlowManager) add(id int, host string, count int64, m map[int]map[stri
 
 // AddIn AddIn
 func (fm *SFlowManager) AddIn(id int, host string, count int64) {
-	fm.add(id, host, count, fm.in, fm.inHistory)
-	fm.inSum += uint64(count)
+	fm.add(id, host, count, fm.in, fm.inSum, fm.inSecond)
+	fm.allInSum += uint64(count)
 }
 
 // AddOut AddOut
 func (fm *SFlowManager) AddOut(id int, host string, count int64) {
-	fm.add(id, host, count, fm.out, fm.outHistory)
-	fm.outSum += uint64(count)
+	fm.add(id, host, count, fm.out, fm.outSum, fm.outSecond)
+	fm.allOutSum += uint64(count)
 }
 
-func (fm *SFlowManager) tickFor(m map[int]map[string]*tools.Counter, history map[int]map[string][]uint64) {
+func (fm *SFlowManager) tickFor(m map[int]map[string]*tools.Counter, sum map[int]map[string]uint64, second map[int]map[string]uint64) {
 	for id := range m {
 		for host := range m[id] {
 			fm.lock.RLock()
@@ -86,10 +94,8 @@ func (fm *SFlowManager) tickFor(m map[int]map[string]*tools.Counter, history map
 			fm.lock.RUnlock()
 			num := counter.GetSet(0)
 			fm.lock.Lock()
-			history[id][host] = append([]uint64{uint64(num)}, history[id][host]...)
-			if len(history[id][host]) > limit {
-				history[id][host] = history[id][host][:limit]
-			}
+			second[id][host] = uint64(num)
+			sum[id][host] += uint64(num)
 			fm.lock.Unlock()
 		}
 	}
@@ -101,8 +107,8 @@ func (fm *SFlowManager) Tick() {
 	for {
 		select {
 		case <-t:
-			go fm.tickFor(fm.in, fm.inHistory)
-			go fm.tickFor(fm.out, fm.outHistory)
+			go fm.tickFor(fm.in, fm.inSum, fm.inSecond)
+			go fm.tickFor(fm.out, fm.outSum, fm.outSecond)
 		}
 	}
 }
@@ -110,8 +116,8 @@ func (fm *SFlowManager) Tick() {
 // GetRoot GetRoot
 func (fm *SFlowManager) GetRoot() string {
 	m := make(map[string]string)
-	m["in sum"] = handleBytesNum(fm.inSum)
-	m["out sum"] = handleBytesNum(fm.outSum)
+	m["in sum"] = handleBytesNum(fm.allInSum)
+	m["out sum"] = handleBytesNum(fm.allOutSum)
 	bytes, err := json.MarshalIndent(m, "", "  ")
 	if err != nil {
 		return err.Error()
@@ -120,43 +126,36 @@ func (fm *SFlowManager) GetRoot() string {
 }
 
 type sIDMap struct {
-	In      string
-	Out     string
-	SumIns  string
-	SumOuts string
+	In     string
+	Out    string
+	SumIn  string
+	SumOut string
 }
 
 // GetID GetID
 func (fm *SFlowManager) GetID(id int) string {
 	resultMap := make(map[string]sIDMap)
 	fm.lock.RLock()
-	inMap := fm.inHistory[id]
-	outMap := fm.outHistory[id]
-	sumIn := uint64(0)
-	sumOut := uint64(0)
-	sumIns := uint64(0)
-	sumOuts := uint64(0)
-	for k, inv := range inMap {
-		outv := outMap[k]
-		if len(inv) == 0 || len(outv) == 0 {
-			continue
-		}
-		sumInForK := uint64(0)
-		sumOutForK := uint64(0)
-		for _, v := range inv {
-			sumInForK += v
-		}
-		for _, v := range outv {
-			sumOutForK += v
-		}
-		resultMap[k] = sIDMap{In: handleBytesNum(inv[0]), Out: handleBytesNum(outv[0]), SumIns: handleBytesNum(sumInForK), SumOuts: handleBytesNum(sumOutForK)}
-		sumIn += inv[0]
-		sumOut += outv[0]
-		sumIns += sumInForK
-		sumOuts += sumOutForK
+	//inMap := fm.inHistory[id]
+	//outMap := fm.outHistory[id]
+	inSecondMap := fm.inSecond[id]
+	outSecondMap := fm.outSecond[id]
+	idSumIn := uint64(0)
+	idSumOut := uint64(0)
+	secondInSum := uint64(0)
+	secondOutSum := uint64(0)
+	for k, inv := range inSecondMap {
+		outv := outSecondMap[k]
+		sumIn := fm.inSum[id][k]
+		sumOut := fm.outSum[id][k]
+		idSumIn += sumIn
+		idSumOut += sumOut
+		secondInSum += inv
+		secondOutSum += outv
+		resultMap[k] = sIDMap{In: handleBytesNum(inv), Out: handleBytesNum(outv), SumIn: handleBytesNum(sumIn), SumOut: handleBytesNum(sumOut)}
 	}
 	fm.lock.RUnlock()
-	resultMap["0"] = sIDMap{In: handleBytesNum(sumIn), Out: handleBytesNum(sumOut), SumIns: handleBytesNum(sumIns), SumOuts: handleBytesNum(sumOuts)}
+	resultMap["0"] = sIDMap{In: handleBytesNum(secondInSum), Out: handleBytesNum(secondOutSum), SumIn: handleBytesNum(idSumIn), SumOut: handleBytesNum(idSumOut)}
 	bytes, err := json.MarshalIndent(resultMap, "", "  ")
 	if err != nil {
 		return err.Error()
@@ -165,7 +164,7 @@ func (fm *SFlowManager) GetID(id int) string {
 }
 
 // GetIDHistory GetIDHistory
-func (fm *SFlowManager) GetIDHistory(id int) string {
+/*func (fm *SFlowManager) GetIDHistory(id int) string {
 	fm.lock.RLock()
 	defer fm.lock.RUnlock()
 	inMap := fm.inHistory[id]
@@ -190,7 +189,7 @@ func (fm *SFlowManager) GetIDHistory(id int) string {
 		res = res[:li] + res[li+1:]
 	}
 	return res + "}"
-}
+}*/
 
 var mark = []string{"B", "KB", "MB", "GB", "TB", "PB", "EB"}
 
