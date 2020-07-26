@@ -49,7 +49,9 @@ type SFlowManager struct {
 }
 
 func (fm *SFlowManager) add(id int, host string, count int64, m map[int]map[string]*tools.Counter, sum map[int]map[string]uint64, second map[int]map[string]uint64) {
+	fm.lock.RLock()
 	hostMap, ok := m[id]
+	fm.lock.RUnlock()
 	if !ok {
 		fm.lock.Lock()
 		hostMap, ok = m[id]
@@ -61,7 +63,9 @@ func (fm *SFlowManager) add(id int, host string, count int64, m map[int]map[stri
 		}
 		fm.lock.Unlock()
 	}
+	fm.lock.RLock()
 	counter, ok := hostMap[host]
+	fm.lock.RUnlock()
 	if !ok {
 		fm.lock.Lock()
 		counter, ok = hostMap[host]
