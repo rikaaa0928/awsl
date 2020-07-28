@@ -34,3 +34,26 @@ ws.run "wsl -d $wsl_name -e sudo $path_to_wsl_run.sh", vbhide
 5. 使用任务计划程序添加vbs  
 ## windows
 [使用vbs管理awsl.exe](https://blog.bilibili.network/posts/vbs_service/ "vbs")
+
+## awsl.service demo
+```
+[Unit]
+Description=awsl
+After=network-online.target network.target
+Wants=network-online.target systemd-networkd-wait-online.service network.target
+
+[Service]
+Restart=on-failure
+User=user
+Group=users
+ExecStart=awsl -m 80
+ExecReload=/bin/kill $MAINPID
+KillMode=mixed
+KillSignal=SIGTERM
+TimeoutStopSec=5s
+StandardOutput=file:awsl.log
+StandardError=file:awsl.error.log
+
+[Install]
+WantedBy=multi-user.target
+```
