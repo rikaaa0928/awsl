@@ -1,9 +1,9 @@
 package main
 
 import (
-	"github.com/Evi1/awsl/config"
-	"github.com/Evi1/awsl/manage"
-	"github.com/Evi1/awsl/object"
+	"github.com/rikaaa0928/awsl/config"
+	"github.com/rikaaa0928/awsl/manage"
+	"github.com/rikaaa0928/awsl/object"
 )
 
 func main() {

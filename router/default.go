@@ -9,10 +9,10 @@ import (
 	"sync"
 	"time"
 
-	"github.com/Evi1/awsl/config"
-	"github.com/Evi1/awsl/model"
-	"github.com/Evi1/awsl/tools/dns"
-	inlist "github.com/Evi1/awsl/tools/inList"
+	"github.com/rikaaa0928/awsl/config"
+	"github.com/rikaaa0928/awsl/model"
+	"github.com/rikaaa0928/awsl/tools/dns"
+	inlist "github.com/rikaaa0928/awsl/tools/inList"
 )
 
 // NewDefaultRouter NewDefaultRouter

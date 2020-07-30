@@ -4,7 +4,7 @@ import (
 	"log"
 	"strconv"
 
-	"github.com/Evi1/awsl/tools"
+	"github.com/rikaaa0928/awsl/tools"
 )
 
 func ncc(cns map[int]connNum, id int, tag string) {

@@ -1,6 +1,6 @@
 package router
 
-import "github.com/Evi1/awsl/model"
+import "github.com/rikaaa0928/awsl/model"
 
 // Router router
 type Router interface {

@@ -3,7 +3,7 @@ package clients
 import (
 	"net"
 
-	"github.com/Evi1/awsl/model"
+	"github.com/rikaaa0928/awsl/model"
 )
 
 // Client listen and handel incomming

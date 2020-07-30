@@ -5,10 +5,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/Evi1/awsl/clients"
-	"github.com/Evi1/awsl/model"
-	"github.com/Evi1/awsl/servers"
-	"github.com/Evi1/awsl/tools/dialer"
+	"github.com/rikaaa0928/awsl/clients"
+	"github.com/rikaaa0928/awsl/model"
+	"github.com/rikaaa0928/awsl/servers"
+	"github.com/rikaaa0928/awsl/tools/dialer"
 )
 
 func Test_TCP(t *testing.T) {

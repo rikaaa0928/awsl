@@ -1,7 +1,7 @@
 package object
 
 import (
-	"github.com/Evi1/awsl/config"
+	"github.com/rikaaa0928/awsl/config"
 )
 
 type defaultManager struct {

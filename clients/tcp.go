@@ -6,9 +6,9 @@ import (
 	"net"
 	"time"
 
-	"github.com/Evi1/awsl/model"
-	"github.com/Evi1/awsl/tools/crypt"
-	"github.com/Evi1/awsl/tools/dialer"
+	"github.com/rikaaa0928/awsl/model"
+	"github.com/rikaaa0928/awsl/tools/crypt"
+	"github.com/rikaaa0928/awsl/tools/dialer"
 )
 
 // NewTCP NewTCP

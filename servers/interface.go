@@ -4,7 +4,7 @@ import (
 	"errors"
 	"net"
 
-	"github.com/Evi1/awsl/model"
+	"github.com/rikaaa0928/awsl/model"
 )
 
 // ErrUDP ErrUDP

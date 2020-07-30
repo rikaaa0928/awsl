@@ -6,9 +6,9 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/Evi1/awsl/config"
-	"github.com/Evi1/awsl/object"
-	om "github.com/Evi1/awsl/object/manage"
+	"github.com/rikaaa0928/awsl/config"
+	"github.com/rikaaa0928/awsl/object"
+	om "github.com/rikaaa0928/awsl/object/manage"
 )
 
 var base = "/manage/"

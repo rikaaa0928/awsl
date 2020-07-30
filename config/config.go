@@ -10,7 +10,7 @@ import (
 	"path/filepath"
 	"sync"
 
-	"github.com/Evi1/awsl/model"
+	"github.com/rikaaa0928/awsl/model"
 )
 
 var conf *model.Object

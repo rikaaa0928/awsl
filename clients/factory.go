@@ -1,6 +1,6 @@
 package clients
 
-import "github.com/Evi1/awsl/model"
+import "github.com/rikaaa0928/awsl/model"
 
 // NewClients new clients
 func NewClients(conf []model.Out) []Client {

@@ -5,9 +5,9 @@ import (
 	"errors"
 	"net"
 
-	"github.com/Evi1/awsl/model"
-	"github.com/Evi1/awsl/tools"
-	"github.com/Evi1/awsl/tools/crypt"
+	"github.com/rikaaa0928/awsl/model"
+	"github.com/rikaaa0928/awsl/tools"
+	"github.com/rikaaa0928/awsl/tools/crypt"
 )
 
 // NewTCP new tcp

@@ -3,7 +3,7 @@ package servers
 import (
 	"context"
 
-	"github.com/Evi1/awsl/model"
+	"github.com/rikaaa0928/awsl/model"
 )
 
 // NewServers new servers

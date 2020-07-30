@@ -1,8 +1,9 @@
 package tools
 
 import (
-	"github.com/Evi1/awsl/config"
 	"sync"
+
+	"github.com/rikaaa0928/awsl/config"
 )
 
 // MemPool MemPool

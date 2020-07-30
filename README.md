@@ -6,7 +6,7 @@ A WebSocket Linker
 windows10可使用wsl
 
 1. 安装[golang](https://golang.org/doc/install "go")  
-2. `git clone https://github.com/Evi1/awsl.git`
+2. `git clone https://github.com/rikaaa0928/awsl.git`
 3. `cd awsl`
 4. `chmod +x install_all.sh`
 5. `./install_all.sh`

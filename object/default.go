@@ -8,13 +8,13 @@ import (
 	"strconv"
 	"sync"
 
-	"github.com/Evi1/awsl/clients"
-	"github.com/Evi1/awsl/config"
-	"github.com/Evi1/awsl/model"
-	"github.com/Evi1/awsl/object/manage"
-	"github.com/Evi1/awsl/router"
-	"github.com/Evi1/awsl/servers"
-	"github.com/Evi1/awsl/tools"
+	"github.com/rikaaa0928/awsl/clients"
+	"github.com/rikaaa0928/awsl/config"
+	"github.com/rikaaa0928/awsl/model"
+	"github.com/rikaaa0928/awsl/object/manage"
+	"github.com/rikaaa0928/awsl/router"
+	"github.com/rikaaa0928/awsl/servers"
+	"github.com/rikaaa0928/awsl/tools"
 )
 
 // NewDefault NewDefault

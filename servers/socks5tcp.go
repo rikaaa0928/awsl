@@ -9,8 +9,8 @@ import (
 	"net"
 	"strconv"
 
-	"github.com/Evi1/awsl/model"
-	"github.com/Evi1/awsl/tools"
+	"github.com/rikaaa0928/awsl/model"
+	"github.com/rikaaa0928/awsl/tools"
 )
 
 // NewSocks5TCP NewSocks5TCP

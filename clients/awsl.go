@@ -7,9 +7,9 @@ import (
 	"log"
 	"net"
 
-	"github.com/Evi1/awsl/config"
-	"github.com/Evi1/awsl/model"
-	"github.com/Evi1/awsl/tools/dialer"
+	"github.com/rikaaa0928/awsl/config"
+	"github.com/rikaaa0928/awsl/model"
+	"github.com/rikaaa0928/awsl/tools/dialer"
 	"golang.org/x/net/websocket"
 )
 

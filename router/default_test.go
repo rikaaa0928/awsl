@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"testing"
 
-	"github.com/Evi1/awsl/model"
+	"github.com/rikaaa0928/awsl/model"
 )
 
 func Test_R(t *testing.T) {

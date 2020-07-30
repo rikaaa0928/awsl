@@ -10,8 +10,8 @@ import (
 	"net/url"
 	"time"
 
-	"github.com/Evi1/awsl/model"
-	"github.com/Evi1/awsl/tools"
+	"github.com/rikaaa0928/awsl/model"
+	"github.com/rikaaa0928/awsl/tools"
 )
 
 // NewH2C NewH2C

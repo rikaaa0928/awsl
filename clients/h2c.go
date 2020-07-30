@@ -12,9 +12,9 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/Evi1/awsl/config"
-	"github.com/Evi1/awsl/model"
-	"github.com/Evi1/awsl/tools/dialer"
+	"github.com/rikaaa0928/awsl/config"
+	"github.com/rikaaa0928/awsl/model"
+	"github.com/rikaaa0928/awsl/tools/dialer"
 )
 
 // NewH2C NewH2C

@@ -4,7 +4,7 @@ import (
 	"net"
 	"testing"
 
-	"github.com/Evi1/awsl/tools"
+	"github.com/rikaaa0928/awsl/tools"
 )
 
 func TestSize(t *testing.T) {
