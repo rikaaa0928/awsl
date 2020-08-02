@@ -8,6 +8,7 @@ import (
 	"net"
 	"net/http"
 	"net/url"
+	"sync"
 	"time"
 
 	"github.com/rikaaa0928/awsl/model"
@@ -56,7 +57,7 @@ func (w rewrite) Write(b []byte) (n int, err error) {
 	return
 }
 
-func (s *H2C) serve(w http.ResponseWriter, r *http.Request) {
+func (s *H2C) h2cHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method != "PUT" {
 		http.Error(w, "PUT required.", http.StatusBadRequest)
 		return
@@ -101,15 +102,20 @@ func (s *H2C) serve(w http.ResponseWriter, r *http.Request) {
 	c := &h2cConn{w: ww, r: rr, Pw: pw.Value, Addr: addr}
 
 	s.Conns <- c
-
-	go io.Copy(rewrite{w}, wr)
+	wait := sync.WaitGroup{}
+	wait.Add(1)
+	go func() {
+		io.Copy(rewrite{w}, wr)
+		wait.Done()
+	}()
 	io.Copy(rw, r.Body)
+	wait.Wait()
 }
 
 // Listen Listen
 func (s *H2C) Listen() net.Listener {
 	mux := http.NewServeMux()
-	mux.HandleFunc("/"+s.URI+"/", s.serve)
+	mux.HandleFunc("/"+s.URI+"/", s.h2cHandler)
 	s.Srv = http.Server{Addr: s.IP + ":" + s.Port, Handler: mux}
 	/*var srv http.Server
 	srv.Handler = mux
