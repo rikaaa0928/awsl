@@ -22,7 +22,7 @@ jobs:
         goarch: ["386", amd64]
     steps:
     - uses: actions/checkout@v2
-    - uses: rikaaa0928/go-release-action@master
+    - uses: rikaaa0928/go-release-action@v0.1
       with:
         github_token: ${{ secrets.GITHUB_TOKEN }}
         goos: ${{ matrix.goos }}
