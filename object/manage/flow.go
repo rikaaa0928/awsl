@@ -18,8 +18,8 @@ var ServerFlowManager *SFlowManager
 
 func init() {
 	//limit = int(time.Hour / time.Second)
-	ServerFlowManager = &SFlowManager{in: make(map[int]map[string]*tools.Counter),
-		out: make(map[int]map[string]*tools.Counter),
+	ServerFlowManager = &SFlowManager{in: make(map[int]map[string]tools.Counter),
+		out: make(map[int]map[string]tools.Counter),
 		//inHistory:  make(map[int]map[string][]uint64, 0),
 		//outHistory: make(map[int]map[string][]uint64, 0),
 		inSum:     make(map[int]map[string]uint64),
@@ -35,8 +35,8 @@ func init() {
 
 // SFlowManager SFlowManager
 type SFlowManager struct {
-	in        map[int]map[string]*tools.Counter
-	out       map[int]map[string]*tools.Counter
+	in        map[int]map[string]tools.Counter
+	out       map[int]map[string]tools.Counter
 	inSecond  map[int]map[string]uint64
 	outSecond map[int]map[string]uint64
 	inSum     map[int]map[string]uint64
@@ -48,7 +48,7 @@ type SFlowManager struct {
 	lock      sync.RWMutex
 }
 
-func (fm *SFlowManager) add(id int, host string, count int64, m map[int]map[string]*tools.Counter, sum map[int]map[string]uint64, second map[int]map[string]uint64) {
+func (fm *SFlowManager) add(id int, host string, count int64, m map[int]map[string]tools.Counter, sum map[int]map[string]uint64, second map[int]map[string]uint64) {
 	fm.lock.RLock()
 	hostMap, ok := m[id]
 	fm.lock.RUnlock()
@@ -56,7 +56,7 @@ func (fm *SFlowManager) add(id int, host string, count int64, m map[int]map[stri
 		fm.lock.Lock()
 		hostMap, ok = m[id]
 		if !ok {
-			m[id] = make(map[string]*tools.Counter)
+			m[id] = make(map[string]tools.Counter)
 			sum[id] = make(map[string]uint64)
 			second[id] = make(map[string]uint64)
 			hostMap = m[id]
@@ -70,7 +70,7 @@ func (fm *SFlowManager) add(id int, host string, count int64, m map[int]map[stri
 		fm.lock.Lock()
 		counter, ok = hostMap[host]
 		if !ok {
-			hostMap[host] = tools.NewCounter()
+			hostMap[host] = tools.NewCounter("atomic")
 			counter = hostMap[host]
 		}
 		fm.lock.Unlock()
@@ -90,13 +90,13 @@ func (fm *SFlowManager) AddOut(id int, host string, count int64) {
 	fm.allOutSum += uint64(count)
 }
 
-func (fm *SFlowManager) tickFor(m map[int]map[string]*tools.Counter, sum map[int]map[string]uint64, second map[int]map[string]uint64) {
+func (fm *SFlowManager) tickFor(m map[int]map[string]tools.Counter, sum map[int]map[string]uint64, second map[int]map[string]uint64) {
 	for id := range m {
 		for host := range m[id] {
 			fm.lock.RLock()
 			counter := m[id][host]
 			fm.lock.RUnlock()
-			num := counter.GetSet(0)
+			num := counter.Set(0)
 			fm.lock.Lock()
 			second[id][host] = uint64(num)
 			sum[id][host] += uint64(num)

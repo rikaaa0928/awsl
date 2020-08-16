@@ -10,7 +10,7 @@ import (
 func ncc(cns map[int]connNum, id int, tag string) {
 	cn, ok := cns[id]
 	if !ok {
-		cns[id] = connNum{Tag: tag, Counter: tools.NewCounter()}
+		cns[id] = connNum{Tag: tag, Counter: tools.NewCounter("atomic")}
 		cn = cns[id]
 	}
 	cn.Add(1)
@@ -44,7 +44,7 @@ func ConnectionCloseCount(isServer bool, id int) {
 
 type connNum struct {
 	Tag string
-	*tools.Counter
+	tools.Counter
 }
 
 // ServerConnectionNumber ServerConnectionNumber map

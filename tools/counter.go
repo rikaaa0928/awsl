@@ -1,33 +1,19 @@
 package tools
 
 // NewCounter NewCounter
-func NewCounter() *Counter {
-	c := &Counter{sum: make(chan int64, 1)}
-	c.sum <- 0
-	return c
+func NewCounter(t string) (c Counter) {
+	if t == "chan" {
+		c = &ChanCounter{sum: make(chan int64, 1)}
+		c.(*ChanCounter).sum <- 0
+	} else {
+		c = &AtomicCounter{}
+	}
+	return
 }
 
-// Counter Counter
-type Counter struct {
-	sum chan int64
-}
-
-// Add Add
-func (c *Counter) Add(a int64) {
-	s := <-c.sum
-	c.sum <- s + a
-}
-
-// Get Get
-func (c *Counter) Get() int64 {
-	s := <-c.sum
-	c.sum <- s
-	return s
-}
-
-// GetSet GetSet
-func (c *Counter) GetSet(a int64) int64 {
-	s := <-c.sum
-	c.sum <- a
-	return s
+// Counter Counter Interface
+type Counter interface {
+	Set(a int64) int64
+	Get() int64
+	Add(a int64)
 }
