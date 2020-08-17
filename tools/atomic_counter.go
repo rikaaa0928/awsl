@@ -20,7 +20,6 @@ func (c *AtomicCounter) Get() int64 {
 
 // Set Set
 func (c *AtomicCounter) Set(a int64) int64 {
-	s := atomic.LoadInt64(&c.sum)
-	atomic.StoreInt64(&c.sum, a)
+	s := atomic.SwapInt64(&c.sum, a)
 	return s
 }
