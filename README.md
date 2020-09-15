@@ -5,12 +5,8 @@ A WebSocket Linker
 
 windows10可使用wsl
 
-1. 安装[golang](https://golang.org/doc/install "go")  
-2. `git clone https://github.com/rikaaa0928/awsl.git`
-3. `cd awsl`
-4. `chmod +x install_all.sh`
-5. `./install_all.sh`
-6. 运行`$GOPATH/bin/awsl -c $configfile`
+1. 从release下载对应版本
+2. 运行`awsl -c $configfile`
 
 没有`-c $configfile`时读取/etc/awsl/config.json
 配置文件参考`test/server.config.json`和`test/client.config.json` 以及`Caddfile`，配合caddy使用时server端不需要key和crt
