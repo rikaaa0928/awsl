@@ -7,12 +7,16 @@ import (
 	"github.com/rikaaa0928/awsl/aconn"
 )
 
+func NewRealListener(l AListener) *RealListener {
+	return &RealListener{Closer: l, a: l.Accept}
+}
+
 type RealListener struct {
-	a Accepter
+	a Acceptor
 	io.Closer
 }
 
-func (l *RealListener) RegisterAccepter(mid AcceptMid) {
+func (l *RealListener) RegisterAcceptor(mid AcceptMid) {
 	l.a = mid(l.a)
 }
 

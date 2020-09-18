@@ -17,7 +17,7 @@ import (
 var ErrUDP = errors.New("udp error")
 
 func NewSocksAcceptMid(inTag string) AcceptMid {
-	return func(next Accepter) Accepter {
+	return func(next Acceptor) Acceptor {
 		return func(ctx context.Context) (context.Context, aconn.AConn, error) {
 			ctx, conn, err := next(ctx)
 			ctx = context.WithValue(ctx, CTXIntag, inTag)
@@ -75,7 +75,7 @@ func socks4(ctx context.Context, conn aconn.AConn, buf []byte, n int) (context.C
 		conn.Close()
 		return ctx, nil, err
 	}
-	conn.SetEndAddr(host, int(port), "tcp")
+	conn.SetEndAddr(aconn.NewAddr(host, int(port), "tcp"))
 	return ctx, conn, nil
 }
 
@@ -100,7 +100,7 @@ func socks5Stage2(ctx context.Context, conn aconn.AConn, buf []byte) (context.Co
 			conn.Close()
 			return ctx, nil, err
 		}
-		conn.SetEndAddr(host, int(port), "tcp")
+		conn.SetEndAddr(aconn.NewAddr(host, int(port), "tcp"))
 		return ctx, conn, nil
 	case 3:
 		conn.Close()

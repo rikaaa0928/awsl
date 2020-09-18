@@ -12,6 +12,14 @@ func NewAConn(c net.Conn) AConn {
 	}
 }
 
+func NewAddr(eh string, ep int, en string) net.Addr {
+	return addrInfo{
+		host:    eh,
+		port:    ep,
+		network: en,
+	}
+}
+
 type addrInfo struct {
 	host    string
 	port    int
@@ -35,10 +43,6 @@ func (c *BaseConn) EndAddr() net.Addr {
 	return c.End
 }
 
-func (c *BaseConn) SetEndAddr(eh string, ep int, en string) {
-	c.End = addrInfo{
-		host:    eh,
-		port:    ep,
-		network: en,
-	}
+func (c *BaseConn) SetEndAddr(addr net.Addr) {
+	c.End = addr
 }

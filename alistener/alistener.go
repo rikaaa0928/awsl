@@ -17,6 +17,6 @@ type AListener interface {
 	Close() error
 }
 
-type Accepter func(context.Context) (context.Context, aconn.AConn, error)
+type Acceptor func(context.Context) (context.Context, aconn.AConn, error)
 
-type AcceptMid func(Accepter) Accepter
+type AcceptMid func(Acceptor) Acceptor
