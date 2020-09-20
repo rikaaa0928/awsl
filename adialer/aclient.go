@@ -9,4 +9,4 @@ import (
 
 type ADialer func(ctx context.Context, addr net.Addr) (aconn.AConn, error)
 
-type DialerFactory func(context.Context) ADialer
+type DialerFactory func(context.Context, ...[]byte) ADialer

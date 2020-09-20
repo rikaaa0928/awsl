@@ -7,6 +7,10 @@ import (
 	"github.com/rikaaa0928/awsl/aconn"
 )
 
+type Acceptor func(context.Context) (context.Context, aconn.AConn, error)
+
+type AcceptMid func(Acceptor) Acceptor
+
 func NewRealListener(l AListener) *RealListener {
 	return &RealListener{Closer: l, a: l.Accept}
 }

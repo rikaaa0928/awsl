@@ -17,6 +17,6 @@ type AListener interface {
 	Close() error
 }
 
-type Acceptor func(context.Context) (context.Context, aconn.AConn, error)
-
-type AcceptMid func(Acceptor) Acceptor
+type AcceptMidor interface {
+	RegisterAcceptor(mid AcceptMid)
+}

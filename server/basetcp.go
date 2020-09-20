@@ -2,9 +2,11 @@ package server
 
 import (
 	"context"
+	"errors"
 	"io"
 	"log"
 	"net"
+	"strconv"
 	"sync"
 
 	"github.com/rikaaa0928/awsl/aconn"
@@ -14,7 +16,7 @@ import (
 	"github.com/rikaaa0928/awsl/utils"
 )
 
-func NewBaseTcp(listenHost, listenPort string) BaseTcp {
+func NewBaseTcp(listenHost string, listenPort int) BaseTcp {
 	return BaseTcp{
 		ip:   listenHost,
 		port: listenPort,
@@ -23,12 +25,12 @@ func NewBaseTcp(listenHost, listenPort string) BaseTcp {
 
 type BaseTcp struct {
 	ip   string
-	port string
+	port int
 }
 
 // Listen server
 func (s BaseTcp) Listen() alistener.AListener {
-	l, e := net.Listen("tcp", net.JoinHostPort(s.ip, s.port))
+	l, e := net.Listen("tcp", net.JoinHostPort(s.ip, strconv.Itoa(s.port)))
 	if e != nil {
 		panic(e)
 	}
@@ -71,6 +73,12 @@ type baseAListerWrapper struct {
 }
 
 func (l *baseAListerWrapper) Accept(ctx context.Context) (context.Context, aconn.AConn, error) {
+	select {
+	case <-ctx.Done():
+		l.Listener.Close().Error()
+		return ctx, nil, errors.New("ctx canceled")
+	default:
+	}
 	conn, err := l.Listener.Accept()
 	if err != nil {
 		return ctx, nil, err

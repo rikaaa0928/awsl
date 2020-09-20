@@ -1,31 +1,21 @@
 package main
 
 import (
-	"context"
 	"log"
-	"os"
 
-	"github.com/rikaaa0928/awsl/aconn"
-	"github.com/rikaaa0928/awsl/adialer"
-	"github.com/rikaaa0928/awsl/alistener"
-	"github.com/rikaaa0928/awsl/arouter"
-	"github.com/rikaaa0928/awsl/server"
+	"github.com/rikaaa0928/awsl/config"
+	"github.com/rikaaa0928/awsl/object"
 )
 
 func main() {
-	log.SetOutput(os.Stderr)
-	s := server.NewBaseTcp("127.0.0.1", "12345")
-	handle := s.Handler()
-	l := alistener.NewRealListener(s.Listen())
-	l.RegisterAcceptor(alistener.NewSocksAcceptMid("socks"))
-	for {
-		ctx, c, err := l.Accept(context.Background())
-		if err != nil {
-			log.Println(err)
-		}
-		go func() {
-			rc := aconn.CreateRealConn(c)
-			handle(ctx, rc, arouter.NopRouter, adialer.DefaultFactory)
-		}()
+	conf := config.NewJsonConfig()
+	err := conf.Open("./test/conf.json")
+	if err != nil {
+		panic(err)
+	}
+	ins, err := conf.GetMap("ins")
+	log.Println(len(ins))
+	for k := range ins {
+		object.DefaultObject(k, conf)
 	}
 }

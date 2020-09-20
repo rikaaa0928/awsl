@@ -1,6 +1,7 @@
 package test
 
 import (
+	"encoding/json"
 	"fmt"
 	"testing"
 )
@@ -41,4 +42,51 @@ func TestAB(t *testing.T) {
 	c := bStruct{a.A, b.B}
 	t.Log(c.FA("c"))
 	t.Log(c.FB(1))
+}
+
+func TestJson(t *testing.T) {
+	var a map[string]json.RawMessage
+	err := json.Unmarshal([]byte(`{"a":"21"}`), &a)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Log(a["a"])
+	err = json.Unmarshal([]byte(`{"a":21}`), &a)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Log(a["a"])
+}
+
+func TestJson2(t *testing.T) {
+	var a []map[string]json.RawMessage
+	err := json.Unmarshal([]byte(`[{"a":"21"}]`), &a)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Log(a[0]["a"])
+
+}
+
+func TestMap(t *testing.T) {
+	m := map[string]string{"a": "a"}
+	var b map[string]interface{}
+	var c interface{}
+	var ok bool
+	c = m
+	b, ok = c.(map[string]interface{})
+	if !ok {
+		t.Fatal(ok)
+	}
+	t.Log(b["a"])
+}
+
+func TestJson3(t *testing.T) {
+	var a []string
+	err := json.Unmarshal([]byte(`["1","2","3"]`), &a)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Log(a)
+
 }

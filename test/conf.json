@@ -1,0 +1,20 @@
+{
+    "ins": {
+        "socks5": {
+            "type": "socks",
+            "host": "127.0.0.1",
+            "port": 12345
+        }
+    },
+    "router": [
+        {
+            "tag": "default",
+            "type": "default"
+        }
+    ],
+    "outs": {
+        "free": {
+            "type": "free"
+        }
+    }
+}

@@ -2,6 +2,6 @@ package adialer
 
 import "context"
 
-var DefaultFactory = func(_ context.Context) ADialer {
+var TestFactory = func(_ context.Context, _ ...[]byte) ADialer {
 	return FreeTCP
 }

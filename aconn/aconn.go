@@ -7,3 +7,9 @@ type AConn interface {
 	EndAddr() net.Addr
 	SetEndAddr(addr net.Addr)
 }
+
+type AConnMidor interface {
+	RegisterCloser(mid CLoserMid)
+	RegisterReader(mid IOMid)
+	RegisterWriter(mid IOMid)
+}
