@@ -2,7 +2,6 @@ package server
 
 import (
 	"context"
-	"errors"
 	"io"
 	"log"
 	"net"
@@ -73,12 +72,6 @@ type baseAListerWrapper struct {
 }
 
 func (l *baseAListerWrapper) Accept(ctx context.Context) (context.Context, aconn.AConn, error) {
-	select {
-	case <-ctx.Done():
-		l.Listener.Close().Error()
-		return ctx, nil, errors.New("ctx canceled")
-	default:
-	}
 	conn, err := l.Listener.Accept()
 	if err != nil {
 		return ctx, nil, err

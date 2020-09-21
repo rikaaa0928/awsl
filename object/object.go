@@ -3,6 +3,7 @@ package object
 import (
 	"context"
 	"log"
+	"sync"
 
 	"github.com/rikaaa0928/awsl/aconn"
 	"github.com/rikaaa0928/awsl/adialer"
@@ -12,9 +13,10 @@ import (
 	"github.com/rikaaa0928/awsl/server"
 )
 
-type Object func(string, config.Configs)
+type Object func(context.Context, *sync.WaitGroup, string, config.Configs)
 
-var DefaultObject Object = func(tag string, c config.Configs) {
+var DefaultObject Object = func(ctx context.Context, wg *sync.WaitGroup, tag string, c config.Configs) {
+	closed := false
 	typ, err := c.GetString("ins", tag, "type")
 	if err != nil {
 		panic(err)
@@ -32,8 +34,15 @@ var DefaultObject Object = func(tag string, c config.Configs) {
 	l := alistener.NewRealListener(s.Listen())
 	alistener.DefaultAcceptMids(l, typ, tag)
 	//l.RegisterAcceptor(alistener.NewSocksAcceptMid("socks"))
-	for {
-		ctx, c, err := l.Accept(context.Background())
+	go func(closed *bool) {
+		select {
+		case <-ctx.Done():
+			*closed = true
+			l.Close()
+		}
+	}(&closed)
+	for !closed {
+		ctx, c, err := l.Accept(ctx)
 		if err != nil {
 			log.Println(err)
 		}
@@ -42,4 +51,5 @@ var DefaultObject Object = func(tag string, c config.Configs) {
 			handle(ctx, rc, arouter.NopRouter, adialer.TestFactory)
 		}()
 	}
+	wg.Done()
 }
