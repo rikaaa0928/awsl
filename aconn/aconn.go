@@ -8,7 +8,7 @@ type AConn interface {
 	SetEndAddr(addr net.Addr)
 }
 
-type AConnMidor interface {
+type MidsMgr interface {
 	RegisterCloser(mid CLoserMid)
 	RegisterReader(mid IOMid)
 	RegisterWriter(mid IOMid)
