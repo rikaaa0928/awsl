@@ -10,6 +10,7 @@ import (
 	"strconv"
 
 	"github.com/rikaaa0928/awsl/aconn"
+	"github.com/rikaaa0928/awsl/consts"
 	"github.com/rikaaa0928/awsl/utils"
 )
 
@@ -20,7 +21,7 @@ func NewSocksAcceptMid(inTag string) AcceptMid {
 	return func(next Acceptor) Acceptor {
 		return func(ctx context.Context) (context.Context, aconn.AConn, error) {
 			ctx, conn, err := next(ctx)
-			ctx = context.WithValue(ctx, CTXIntag, inTag)
+			ctx = context.WithValue(ctx, consts.CTXInTag, inTag)
 			if err != nil {
 				return ctx, nil, err
 			}

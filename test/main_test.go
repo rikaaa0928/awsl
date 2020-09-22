@@ -13,7 +13,7 @@ import (
 	"github.com/rikaaa0928/awsl/server"
 )
 
-func TestMain(t *testing.T) {
+func TestSingle(t *testing.T) {
 	log.SetOutput(os.Stderr)
 	s := server.NewBaseTcp("127.0.0.1", 12345)
 	handle := s.Handler()

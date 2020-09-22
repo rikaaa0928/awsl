@@ -1,0 +1,25 @@
+{
+    "ins": {
+        "socks5": {
+            "type": "socks",
+            "host": "127.0.0.1",
+            "port": 12345
+        }
+    },
+    "router": [
+        {
+            "tag": "default",
+            "type": "default"
+        }
+    ],
+    "outs": {
+        "default": {
+            "type": "h2c",
+            "host": "lo.bilibili.network",
+            "port": 12346,
+            "uri": "h2c/",
+            "auth": "1234567890",
+            "skipVerify": true
+        }
+    }
+}

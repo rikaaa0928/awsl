@@ -42,13 +42,18 @@ var DefaultObject Object = func(ctx context.Context, wg *sync.WaitGroup, tag str
 		}
 	}(&closed)
 	for !closed {
-		ctx, c, err := l.Accept(ctx)
+		ctx, ac, err := l.Accept(ctx)
 		if err != nil {
-			log.Println(err)
+			log.Println("accept error: ", err)
 		}
 		go func() {
-			rc := aconn.CreateRealConn(c)
-			handle(ctx, rc, arouter.NopRouter, adialer.TestFactory)
+			rc := aconn.CreateRealConn(ac)
+			outsConf, err := c.GetMap("outs")
+			if err != nil {
+				log.Println("c.GetMap('outs'), err: ", err)
+				return
+			}
+			handle(ctx, rc, arouter.NopRouter, adialer.NewFactory(outsConf))
 		}()
 	}
 	wg.Done()

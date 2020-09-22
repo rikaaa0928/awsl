@@ -3,6 +3,7 @@ package aconn
 import (
 	"net"
 	"strconv"
+	"strings"
 )
 
 func NewAConn(c net.Conn) AConn {
@@ -13,25 +14,36 @@ func NewAConn(c net.Conn) AConn {
 }
 
 func NewAddr(eh string, ep int, en string) net.Addr {
-	return addrInfo{
-		host:    eh,
-		port:    ep,
-		network: en,
+	return AddrInfo{
+		Host:    eh,
+		Port:    ep,
+		NetName: en,
 	}
 }
 
-type addrInfo struct {
-	host    string
-	port    int
-	network string
+type AddrInfo struct {
+	Host    string
+	Port    int
+	NetName string
 }
 
-func (a addrInfo) Network() string {
-	return a.network
+func (a AddrInfo) Network() string {
+	return a.NetName
 }
 
-func (a addrInfo) String() string {
-	return net.JoinHostPort(a.host, strconv.Itoa(a.port))
+func (a AddrInfo) String() string {
+	return net.JoinHostPort(a.Host, strconv.Itoa(a.Port))
+}
+
+func (a *AddrInfo) Parse(network, str string) (err error) {
+	a.NetName = network
+	l := strings.Split(str, ":")
+	a.Port, err = strconv.Atoi(l[len(l)-1])
+	if err != nil {
+		return
+	}
+	a.Host = strings.Join(l[:len(l)-1], "")
+	return
 }
 
 type BaseConn struct {
