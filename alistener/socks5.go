@@ -92,8 +92,7 @@ func socks5Stage2(ctx context.Context, conn aconn.AConn, buf []byte) (context.Co
 		return ctx, nil, errors.New("invalid length")
 	}
 	host, _ := getRemoteHost5(buf[:n])
-	remotePort := getRemotePort5(buf[:n])
-	port := remotePort
+	port := getRemotePort5(buf[:n])
 	switch buf[1] {
 	case 1:
 		_, err = conn.Write([]byte("\x05\x00\x00\x01\x00\x00\x00\x00\xff\xff"))
@@ -101,7 +100,7 @@ func socks5Stage2(ctx context.Context, conn aconn.AConn, buf []byte) (context.Co
 			conn.Close()
 			return ctx, nil, err
 		}
-		conn.SetEndAddr(aconn.NewAddr(host, int(port), "tcp"))
+		conn.SetEndAddr(aconn.NewAddr(host, port, "tcp"))
 		return ctx, conn, nil
 	case 3:
 		conn.Close()
@@ -134,7 +133,6 @@ func getRemoteHost5(data []byte) (s string, t int) {
 		return
 	}
 	t = 6
-	s += "["
 	for i := 0; i < len(data)-7; i += 2 {
 		s += strconv.FormatInt(int64(data[4+i]), 16)
 		s += fmt.Sprintf("%02x", int(data[5+i]))
@@ -142,7 +140,6 @@ func getRemoteHost5(data []byte) (s string, t int) {
 			s += ":"
 		}
 	}
-	s += "]"
 	return
 }
 
