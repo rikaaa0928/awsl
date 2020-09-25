@@ -40,7 +40,7 @@ func (a *AddrInfo) Parse(network, str string) (err error) {
 	a.NetName = network
 	l := strings.Split(str, ":")
 	if len(l) < 2 {
-		return errors.New("wrong net str: " + str)
+		return errors.New("error host str format(host:port): " + str)
 	}
 	a.Port, err = strconv.Atoi(l[len(l)-1])
 	if err != nil {
@@ -50,8 +50,8 @@ func (a *AddrInfo) Parse(network, str string) (err error) {
 		return errors.New("wrong host: " + a.Host + " str: " + str)
 	}
 	a.Host = strings.Join(l[:len(l)-1], "")
-	if a.Host[0] == '[' && len(a.Host) >= 2 {
-		a.Host = a.Host[1 : len(a.Host)-1]
+	if strings.Index(a.Host, ":") >= 0 {
+		a.Host = strings.Trim(a.Host, "[]")
 	}
 	return
 }
