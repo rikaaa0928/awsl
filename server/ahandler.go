@@ -23,7 +23,7 @@ var DefaultAHandler AHandler = func(ctx context.Context, sConn aconn.AConn, rout
 		log.Println("nil dial")
 		return
 	}
-	cConn, err := dial(ctx, sConn.EndAddr())
+	ctx, cConn, err := dial(ctx, sConn.EndAddr())
 	if err != nil {
 		log.Println("dial error: " + err.Error())
 		return

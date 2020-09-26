@@ -3,7 +3,9 @@ package consts
 type constString string
 
 const (
-	CTXAuth  constString = "auth"
-	CTXRoute constString = "route"
-	CTXInTag constString = "inTag"
+	CTXReceiveAuth constString = "receiveAuth"
+	CTXSendAuth    constString = "sendAuth"
+	CTXRoute       constString = "route"
+	CTXInTag       constString = "inTag"
+	CTXSendData    constString = "sendData"
 )

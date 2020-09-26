@@ -87,7 +87,7 @@ func (l *h2cAListerWrapper) h(w http.ResponseWriter, r *http.Request) {
 func (l *h2cAListerWrapper) Accept(ctx context.Context) (context.Context, aconn.AConn, error) {
 	conn, ok := <-l.cons
 	if ok {
-		ctx = context.WithValue(ctx, consts.CTXAuth, conn.auth)
+		ctx = context.WithValue(ctx, consts.CTXReceiveAuth, conn.(*h2cConn).auth)
 		return ctx, conn, nil
 	}
 	return ctx, nil, errors.New("h2c server closed")

@@ -1,9 +1,11 @@
 package test
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"testing"
+	"time"
 )
 
 type AB interface {
@@ -89,4 +91,17 @@ func TestJson3(t *testing.T) {
 	}
 	t.Log(a)
 
+}
+
+func TestCancel(t *testing.T) {
+	ctx, c := context.WithCancel(context.Background())
+	go func() {
+		<-ctx.Done()
+		t.Log("end")
+	}()
+	c()
+	t.Log("c1")
+	time.Sleep(time.Second)
+	c()
+	t.Log("c2")
 }

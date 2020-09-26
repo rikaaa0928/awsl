@@ -12,6 +12,11 @@ import (
 	"github.com/rikaaa0928/awsl/alistener"
 )
 
+const (
+	TypeHTTP = iota
+	TypeWebsocket
+)
+
 type HTTP struct {
 	host string
 	port int
@@ -19,6 +24,7 @@ type HTTP struct {
 	cert string
 	key  string
 	l    serveListener
+	typ  int
 }
 
 func NewHTTPServer(typ, host, uri, cert, key string, port int) *HTTP {
@@ -31,9 +37,17 @@ func NewHTTPServer(typ, host, uri, cert, key string, port int) *HTTP {
 	}
 	switch typ {
 	case "h2c":
+		s.typ = TypeHTTP
 		s.l = &h2cAListerWrapper{
 			&hbaseAListerWrapper{
-				cons: make(chan *h2cConn, 2*runtime.NumCPU()),
+				cons: make(chan aconn.AConn, 2*runtime.NumCPU()),
+			},
+		}
+	case "awsl":
+		s.typ = TypeWebsocket
+		s.l = &awslAListerWrapper{
+			&hbaseAListerWrapper{
+				cons: make(chan aconn.AConn, 2*runtime.NumCPU()),
 			},
 		}
 	default:
@@ -48,13 +62,11 @@ func (s *HTTP) Listen() alistener.AListener {
 	go func() {
 		if len(s.cert) == 0 || len(s.key) == 0 {
 			err := s.l.srv().ListenAndServe()
-			//err := http.ListenAndServe(s.IP+":"+s.Port, mux)
 			if err != nil {
 				panic("ListenAndServe: " + err.Error())
 			}
 		} else {
 			err := s.l.srv().ListenAndServeTLS(s.cert, s.key)
-			//err := http.ListenAndServeTLS(s.IP+":"+s.Port, s.Cert, s.Key, mux)
 			if err != nil {
 				panic("ListenAndServe: " + err.Error())
 			}
@@ -68,7 +80,7 @@ func (s *HTTP) Handler() AHandler {
 }
 
 type hbaseAListerWrapper struct {
-	cons chan *h2cConn
+	cons chan aconn.AConn
 	s    *http.Server
 }
 
