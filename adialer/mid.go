@@ -69,3 +69,22 @@ func NewAddrDataMid(next ADialer) ADialer {
 		return ctx, conn, nil
 	}
 }
+
+func NewSendDataMid(next ADialer) ADialer {
+	return func(ctx context.Context, addr net.Addr) (context.Context, aconn.AConn, error) {
+		ctx, conn, err := next(ctx, addr)
+		if err != nil {
+			return ctx, nil, err
+		}
+		data := ctx.Value(consts.CTXSendData)
+		if data == nil {
+			return ctx, conn, nil
+		}
+		_, err = conn.Write([]byte(data.(string)))
+		if err != nil {
+			conn.Close()
+			return ctx, nil, err
+		}
+		return ctx, conn, nil
+	}
+}

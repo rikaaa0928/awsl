@@ -32,8 +32,7 @@ var DefaultObject Object = func(ctx context.Context, wg *sync.WaitGroup, tag str
 	//s := server.NewBaseTcp(host, int(port))
 	handle := s.Handler()
 	l := alistener.NewRealListener(s.Listen())
-	alistener.DefaultAcceptMids(l, typ, tag)
-	//l.RegisterAcceptor(alistener.NewSocksAcceptMid("socks"))
+	alistener.DefaultAcceptMids(l, typ, tag, conf)
 	go func(closed *bool) {
 		select {
 		case <-ctx.Done():
