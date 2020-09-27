@@ -6,7 +6,17 @@
             "port": 12346,
             "uri": "h2c/",
             "cert": "./test/server.crt",
-            "key": "./test/server.key"
+            "key": "./test/server.key",
+            "auth": "1234567890"
+        },
+        "awsl": {
+            "type": "awsl",
+            "host": "127.0.0.1",
+            "port": 12347,
+            "uri": "awsl/",
+            "cert": "./test/server.crt",
+            "key": "./test/server.key",
+            "auth": "1234567890"
         }
     },
     "router": [

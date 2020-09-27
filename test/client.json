@@ -13,11 +13,19 @@
         }
     ],
     "outs": {
-        "default": {
+        "h2c": {
             "type": "h2c",
             "host": "lo.bilibili.network",
             "port": 12346,
             "uri": "h2c/",
+            "auth": "1234567890",
+            "skipVerify": true
+        },
+        "default": {
+            "type": "awsl",
+            "host": "lo.bilibili.network",
+            "port": 12347,
+            "uri": "awsl/",
             "auth": "1234567890",
             "skipVerify": true
         }

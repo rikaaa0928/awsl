@@ -44,6 +44,7 @@ var DefaultObject Object = func(ctx context.Context, wg *sync.WaitGroup, tag str
 		ctx, ac, err := l.Accept(ctx)
 		if err != nil {
 			log.Println("accept error: ", err)
+			continue
 		}
 		go func() {
 			rc := aconn.CreateRealConn(ac)

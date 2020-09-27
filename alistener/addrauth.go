@@ -5,10 +5,10 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io/ioutil"
 
 	"github.com/rikaaa0928/awsl/aconn"
 	"github.com/rikaaa0928/awsl/consts"
+	"github.com/rikaaa0928/awsl/utils"
 )
 
 func NewAddrAuthMid(conf map[string]interface{}) AcceptMid {
@@ -25,12 +25,17 @@ func NewAddrAuthMid(conf map[string]interface{}) AcceptMid {
 				if auth.(string) != rAuth.(string) {
 					conn.Close()
 					return ctx, nil, errors.New("auth failed")
+				} else {
+					return ctx, conn, nil
 				}
 			}
 			if err != nil {
 				return ctx, nil, err
 			}
-			data, err := ioutil.ReadAll(conn)
+			buf := utils.GetMem(65536)
+			defer utils.PutMem(buf)
+			n, err := conn.Read(buf)
+			data := buf[:n]
 			if err != nil {
 				conn.Close()
 				return ctx, nil, err
@@ -63,7 +68,7 @@ func NewAddrAuthMid(conf map[string]interface{}) AcceptMid {
 				return ctx, nil, err
 			}
 			conn.SetEndAddr(addr)
-			return ctx, conn, err
+			return ctx, conn, nil
 		}
 	}
 }

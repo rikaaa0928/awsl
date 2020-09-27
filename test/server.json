@@ -6,7 +6,8 @@
             "port": 12346,
             "uri": "h2c/",
             "cert": "./server.crt",
-            "key": "./server.key"
+            "key": "./server.key",
+            "auth": "1234567890"
         }
     },
     "router": [

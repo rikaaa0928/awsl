@@ -14,10 +14,12 @@ func NewAuthDataMid(next ADialer) ADialer {
 	return func(ctx context.Context, addr net.Addr) (context.Context, aconn.AConn, error) {
 		ctx, conn, err := next(ctx, addr)
 		if err != nil {
+			conn.Close()
 			return ctx, nil, err
 		}
 		auth := ctx.Value(consts.CTXSendAuth)
 		if auth == nil {
+			conn.Close()
 			return ctx, nil, errors.New("auth data mid: nil auth")
 		}
 		data := ctx.Value(consts.CTXSendData)
@@ -27,15 +29,17 @@ func NewAuthDataMid(next ADialer) ADialer {
 		} else {
 			err = json.Unmarshal([]byte(data.(string)), &dataMap)
 			if err != nil {
+				conn.Close()
 				return ctx, nil, err
 			}
 		}
 		dataMap["auth"] = auth.(string)
-		dataStr, err := json.Marshal(dataMap)
+		dataBytes, err := json.Marshal(dataMap)
 		if err != nil {
+			conn.Close()
 			return ctx, nil, err
 		}
-		ctx = context.WithValue(ctx, consts.CTXSendData, dataStr)
+		ctx = context.WithValue(ctx, consts.CTXSendData, string(dataBytes))
 		return ctx, conn, nil
 	}
 }
@@ -53,6 +57,7 @@ func NewAddrDataMid(next ADialer) ADialer {
 		} else {
 			err = json.Unmarshal([]byte(data.(string)), &dataMap)
 			if err != nil {
+				conn.Close()
 				return ctx, nil, err
 			}
 		}
@@ -60,12 +65,18 @@ func NewAddrDataMid(next ADialer) ADialer {
 		if !ok {
 			(&ai).Parse(addr.Network(), addr.String())
 		}
-		dataMap["addr"], err = json.Marshal(ai)
-		dataStr, err := json.Marshal(dataMap)
+		addrBytes, err := json.Marshal(ai)
 		if err != nil {
+			conn.Close()
 			return ctx, nil, err
 		}
-		ctx = context.WithValue(ctx, consts.CTXSendData, dataStr)
+		dataMap["addr"] = string(addrBytes)
+		dataBytes, err := json.Marshal(dataMap)
+		if err != nil {
+			conn.Close()
+			return ctx, nil, err
+		}
+		ctx = context.WithValue(ctx, consts.CTXSendData, string(dataBytes))
 		return ctx, conn, nil
 	}
 }

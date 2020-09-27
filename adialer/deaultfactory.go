@@ -21,13 +21,18 @@ func NewFactory(conf map[string]interface{}) DialerFactory {
 			return nil
 		}
 		tagConf := conf[tag].(map[string]interface{})
-		switch tagConf["type"].(string) {
+		var d ADialer
+		typ := tagConf["type"].(string)
+		switch typ {
 		case "h2c":
-			return NewH2C(tagConf)
+			d = NewH2C(tagConf)
 		case "free":
-			return FreeTCP
+			d = FreeTCP
+		case "awsl":
+			d = NewAWSL(tagConf)
 		default:
 		}
-		return nil
+		d = DefaultDialMids(d, typ)
+		return d
 	}
 }

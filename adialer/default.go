@@ -1,6 +1,6 @@
 package adialer
 
-func DefaultAcceptMids(d ADialer, ty string) ADialer {
+func DefaultDialMids(d ADialer, ty string) ADialer {
 	switch ty {
 	case "awsl", "tcp":
 		d = NewAddrDataMid(d)
