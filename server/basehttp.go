@@ -3,6 +3,7 @@ package server
 import (
 	"context"
 	"errors"
+	"log"
 	"net"
 	"net/http"
 	"runtime"
@@ -12,19 +13,14 @@ import (
 	"github.com/rikaaa0928/awsl/alistener"
 )
 
-const (
-	TypeHTTP = iota
-	TypeWebsocket
-)
-
 type HTTP struct {
-	host string
-	port int
-	uri  string
-	cert string
-	key  string
-	l    serveListener
-	typ  int
+	host          string
+	port          int
+	uri           string
+	cert          string
+	key           string
+	l             serveListener
+	handleConnect bool
 }
 
 func NewHTTPServer(typ, host, uri, cert, key string, port int) *HTTP {
@@ -37,46 +33,69 @@ func NewHTTPServer(typ, host, uri, cert, key string, port int) *HTTP {
 	}
 	switch typ {
 	case "h2c":
-		s.typ = TypeHTTP
 		s.l = &h2cAListerWrapper{
 			&hbaseAListerWrapper{
 				cons: make(chan aconn.AConn, 2*runtime.NumCPU()),
 			},
 		}
 	case "awsl":
-		s.typ = TypeWebsocket
 		s.l = &awslAListerWrapper{
 			&hbaseAListerWrapper{
 				cons: make(chan aconn.AConn, 2*runtime.NumCPU()),
 			},
 		}
+	case "http":
+		s.l = &hpAListerWrapper{
+			&hbaseAListerWrapper{
+				cons: make(chan aconn.AConn, 2*runtime.NumCPU()),
+			},
+		}
+		s.handleConnect = true
 	default:
 	}
 	return s
 }
 
 func (s *HTTP) Listen() alistener.AListener {
-	mux := http.NewServeMux()
-	mux.HandleFunc("/"+s.uri, s.l.h)
-	s.l.setSrv(&http.Server{Addr: net.JoinHostPort(s.host, strconv.Itoa(s.port)), Handler: mux})
-	go func() {
-		if len(s.cert) == 0 || len(s.key) == 0 {
-			err := s.l.srv().ListenAndServe()
-			if err != nil {
-				panic("ListenAndServe: " + err.Error())
+	log.Println("base http listen: " + net.JoinHostPort(s.host, strconv.Itoa(s.port)) + "/" + s.uri)
+	if s.handleConnect {
+		s.l.setSrv(&http.Server{Addr: net.JoinHostPort(s.host, strconv.Itoa(s.port)), Handler: http.HandlerFunc(s.l.h)})
+		go func() {
+			if len(s.cert) == 0 || len(s.key) == 0 {
+				err := s.l.srv().ListenAndServe()
+				if err != nil {
+					panic("ListenAndServe: " + err.Error())
+				}
+			} else {
+				err := s.l.srv().ListenAndServeTLS(s.cert, s.key)
+				if err != nil {
+					panic("ListenAndServe: " + err.Error())
+				}
 			}
-		} else {
-			err := s.l.srv().ListenAndServeTLS(s.cert, s.key)
-			if err != nil {
-				panic("ListenAndServe: " + err.Error())
+		}()
+	} else {
+		mux := http.NewServeMux()
+		mux.HandleFunc("/"+s.uri, s.l.h)
+		s.l.setSrv(&http.Server{Addr: net.JoinHostPort(s.host, strconv.Itoa(s.port)), Handler: mux})
+		go func() {
+			if len(s.cert) == 0 || len(s.key) == 0 {
+				err := s.l.srv().ListenAndServe()
+				if err != nil {
+					panic("ListenAndServe: " + err.Error())
+				}
+			} else {
+				err := s.l.srv().ListenAndServeTLS(s.cert, s.key)
+				if err != nil {
+					panic("ListenAndServe: " + err.Error())
+				}
 			}
-		}
-	}()
+		}()
+	}
 	return s.l
 }
 
 func (s *HTTP) Handler() AHandler {
-	return DefaultAHandler
+	return s.l.handler()
 }
 
 type hbaseAListerWrapper struct {
@@ -108,4 +127,8 @@ func (l *hbaseAListerWrapper) Close() error {
 	l.srv().Shutdown(context.Background())
 	close(l.cons)
 	return nil
+}
+
+func (l *hbaseAListerWrapper) handler() AHandler {
+	return DefaultAHandler
 }

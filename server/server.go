@@ -17,7 +17,20 @@ func NewServer(typ string, conf map[string]interface{}) (AServer, error) {
 	case "socks", "socks5", "socks4", "tcp":
 		return NewBaseTcp(conf["host"].(string), int(conf["port"].(float64))), nil
 	case "h2c", "awsl", "http":
-		return NewHTTPServer(typ, conf["host"].(string), conf["uri"].(string), conf["cert"].(string), conf["key"].(string), int(conf["port"].(float64))), nil
+		uri, ok := conf["uri"]
+		if !ok {
+			uri = ""
+		}
+		cert, ok := conf["cert"]
+		if !ok {
+			cert = ""
+		}
+		key, ok := conf["key"]
+		if !ok {
+			key = ""
+		}
+		return NewHTTPServer(typ, conf["host"].(string), uri.(string), cert.(string), key.(string),
+			int(conf["port"].(float64))), nil
 	default:
 	}
 	return nil, fmt.Errorf("error type: %v", typ)
@@ -28,4 +41,5 @@ type serveListener interface {
 	h(w http.ResponseWriter, r *http.Request)
 	setSrv(*http.Server)
 	srv() *http.Server
+	handler() AHandler
 }

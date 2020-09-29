@@ -15,7 +15,7 @@ type awslAListerWrapper struct {
 
 func (l *awslAListerWrapper) handle(conn *websocket.Conn) {
 	ctx, cancel := context.WithCancel(context.Background())
-	ac := &awslConn{
+	ac := &waitCloseConn{
 		Conn:   conn,
 		ctx:    ctx,
 		cancel: cancel,
@@ -29,13 +29,13 @@ func (l *awslAListerWrapper) h(w http.ResponseWriter, r *http.Request) {
 	websocket.Handler(l.handle).ServeHTTP(w, r)
 }
 
-type awslConn struct {
+type waitCloseConn struct {
 	net.Conn
 	ctx    context.Context
 	cancel context.CancelFunc
 }
 
-func (c *awslConn) Close() error {
+func (c *waitCloseConn) Close() error {
 	err := c.Conn.Close()
 	c.cancel()
 	return err
