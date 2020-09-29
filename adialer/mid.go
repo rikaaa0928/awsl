@@ -14,7 +14,6 @@ func NewAuthDataMid(next ADialer) ADialer {
 	return func(ctx context.Context, addr net.Addr) (context.Context, aconn.AConn, error) {
 		ctx, conn, err := next(ctx, addr)
 		if err != nil {
-			conn.Close()
 			return ctx, nil, err
 		}
 		auth := ctx.Value(consts.CTXSendAuth)
