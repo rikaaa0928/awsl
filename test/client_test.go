@@ -3,6 +3,7 @@ package test
 import (
 	"context"
 	"log"
+	"net"
 	"runtime"
 	"sync"
 	"testing"
@@ -28,4 +29,8 @@ func TestClient(t *testing.T) {
 	}
 	wg.Wait()
 	cancel()
+}
+
+func TestSplitHP(t *testing.T) {
+	t.Log(net.SplitHostPort("[::]:123"))
 }

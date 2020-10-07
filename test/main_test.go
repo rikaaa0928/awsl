@@ -18,7 +18,7 @@ func TestSingle(t *testing.T) {
 	s := server.NewBaseTcp("127.0.0.1", 12345)
 	handle := s.Handler()
 	l := alistener.NewRealListener(s.Listen())
-	l.RegisterAcceptor(alistener.NewSocksAcceptMid("socks"))
+	l.RegisterAcceptor(alistener.NewSocksAcceptMid(context.Background(), "socks", map[string]interface{}{"host": "127.0.0.1", "port": 12345}))
 	for {
 		ctx, c, err := l.Accept(context.Background())
 		if err != nil {

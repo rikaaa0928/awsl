@@ -1,10 +1,8 @@
 package aconn
 
 import (
-	"errors"
 	"net"
 	"strconv"
-	"strings"
 )
 
 func NewAConn(c net.Conn) AConn {
@@ -36,24 +34,33 @@ func (a AddrInfo) String() string {
 	return net.JoinHostPort(a.Host, strconv.Itoa(a.Port))
 }
 
-func (a *AddrInfo) Parse(network, str string) (err error) {
+func (a *AddrInfo) Parse(network, str string) error {
 	a.NetName = network
-	l := strings.Split(str, ":")
-	if len(l) < 2 {
-		return errors.New("error host str format(host:port): " + str)
+	h, p, e := net.SplitHostPort(str)
+	if e != nil {
+		return e
 	}
-	a.Port, err = strconv.Atoi(l[len(l)-1])
-	if err != nil {
-		return
+	a.Host = h
+	a.Port, e = strconv.Atoi(p)
+	if e != nil {
+		return e
 	}
-	if len(a.Host) <= 0 {
-		return errors.New("wrong host: " + a.Host + " str: " + str)
-	}
-	a.Host = strings.Join(l[:len(l)-1], "")
-	if strings.Index(a.Host, ":") >= 0 {
-		a.Host = strings.Trim(a.Host, "[]")
-	}
-	return
+	// l := strings.Split(str, ":")
+	// if len(l) < 2 {
+	// 	return errors.New("error host str format(host:port): " + str)
+	// }
+	// a.Port, err = strconv.Atoi(l[len(l)-1])
+	// if err != nil {
+	// 	return
+	// }
+	// if len(a.Host) <= 0 {
+	// 	return errors.New("wrong host: " + a.Host + " str: " + str)
+	// }
+	// a.Host = strings.Join(l[:len(l)-1], "")
+	// if strings.Index(a.Host, ":") >= 0 {
+	// 	a.Host = strings.Trim(a.Host, "[]")
+	// }
+	return nil
 }
 
 type BaseConn struct {

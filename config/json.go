@@ -99,7 +99,7 @@ func (c *JsonConfig) GetInt(path ...string) (int64, error) {
 	if err != nil {
 		return 0, err
 	}
-	reInt, err := strconv.ParseInt(string(v.(json.RawMessage)), 10, 64)
+	reInt, err := strconv.ParseInt(strings.Trim(string(v.(json.RawMessage)), "\""), 10, 64)
 	if err != nil {
 		return 0, err
 	}
