@@ -11,7 +11,7 @@ import (
 	"github.com/rikaaa0928/awsl/utils"
 )
 
-func NewAddrAuthMid(conf map[string]interface{}) AcceptMid {
+func NewMessageMid(conf map[string]interface{}) AcceptMid {
 	return func(next Acceptor) Acceptor {
 		return func(ctx context.Context) (context.Context, aconn.AConn, error) {
 			ctx, conn, err := next(ctx)
