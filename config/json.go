@@ -43,6 +43,8 @@ func (c *JsonConfig) Get(path ...string) (interface{}, error) {
 		return json.RawMessage(c.value), nil
 	}
 	var result interface{}
+	c.Lock()
+	defer c.Unlock()
 	m := c.m
 
 	for i := 0; i < len(path); i++ {

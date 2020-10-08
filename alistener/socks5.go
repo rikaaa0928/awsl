@@ -4,8 +4,8 @@ import (
 	"bytes"
 	"context"
 	"encoding/binary"
+	"encoding/json"
 	"errors"
-	"fmt"
 	"io"
 	"io/ioutil"
 	"log"
@@ -21,72 +21,8 @@ import (
 // ErrUDP ErrUDP
 var ErrUDP = errors.New("udp error")
 
-// datagram is the UDP packet
-type datagram struct {
-	Rsv     []byte // 0x00 0x00
-	Frag    byte
-	Atyp    byte
-	DstAddr []byte
-	DstPort []byte // 2 bytes
-	Data    []byte
-}
-
-func NewDatagramFromBytes(bb []byte) (*datagram, error) {
-	n := len(bb)
-	minl := 4
-	if n < minl {
-		return nil, fmt.Errorf("wrong udp data: %v", bb)
-	}
-	var addr []byte
-	if bb[3] == 1 {
-		minl += 4
-		if n < minl {
-			return nil, fmt.Errorf("wrong udp data: %v", bb)
-		}
-		addr = bb[minl-4 : minl]
-	} else if bb[3] == 4 {
-		minl += 16
-		if n < minl {
-			return nil, fmt.Errorf("wrong udp data: %v", bb)
-		}
-		addr = bb[minl-16 : minl]
-	} else if bb[3] == 3 {
-		minl += 1
-		if n < minl {
-			return nil, fmt.Errorf("wrong udp data: %v", bb)
-		}
-		l := bb[4]
-		if l == 0 {
-			return nil, fmt.Errorf("wrong udp data: %v", bb)
-		}
-		minl += int(l)
-		if n < minl {
-			return nil, fmt.Errorf("wrong udp data: %v", bb)
-		}
-		addr = bb[minl-int(l) : minl]
-		addr = append([]byte{l}, addr...)
-	} else {
-		return nil, fmt.Errorf("wrong udp data: %v", bb)
-	}
-	minl += 2
-	if n <= minl {
-		return nil, fmt.Errorf("wrong udp data: %v", bb)
-	}
-	port := bb[minl-2 : minl]
-	data := bb[minl:]
-	d := &datagram{
-		Rsv:     bb[0:2],
-		Frag:    bb[2],
-		Atyp:    bb[3],
-		DstAddr: addr,
-		DstPort: port,
-		Data:    data,
-	}
-	return d, nil
-}
-
 func NewSocksAcceptMid(ctx context.Context, inTag string, conf map[string]interface{}) AcceptMid {
-	ch := make(chan aconn.AConn, 2*runtime.NumCPU())
+	ch := make(chan consts.SuperMSG, 2*runtime.NumCPU())
 	go func() {
 		closed := false
 		udpAddr, err := net.ResolveUDPAddr("udp", net.JoinHostPort(conf["host"].(string), strconv.Itoa(int(conf["port"].(float64)))))
@@ -103,38 +39,68 @@ func NewSocksAcceptMid(ctx context.Context, inTag string, conf map[string]interf
 			case <-ctx.Done():
 				*closed = true
 				l.Close()
+				close(ch)
 			}
 		}(&closed)
+		buf := utils.GetMem(65536)
+		defer utils.PutMem(buf)
 		for !closed {
-			buf := utils.GetMem(65536)
-			defer utils.PutMem(buf)
-			n, addr, err := l.ReadFromUDP(buf)
+			n, srcAddr, err := l.ReadFromUDP(buf)
 			if err != nil {
 				log.Println("ReadFromUDP error: ", err)
 				continue
 			}
 			go func(addr *net.UDPAddr, b []byte) {
-				d, err := NewDatagramFromBytes(b)
+				u, err := consts.NewUDPMSG(b, srcAddr)
 				if err != nil {
 					log.Println(err)
 					return
 				}
-				if d.Frag != 0x00 {
-					log.Println("Ignore frag", d.Frag)
+				m := consts.SuperMSG{}
+				m.T = "udp"
+				mb, err := json.Marshal(u)
+				if err != nil {
+					log.Println(err)
 					return
 				}
-				log.Println("udp data come", d)
-			}(addr, buf[0:n])
+				m.MSG = string(mb)
+				log.Println("udp data come", u)
+				ch <- m
+			}(srcAddr, buf[0:n])
 		}
 	}()
 	return func(next Acceptor) Acceptor {
 		return func(ctx context.Context) (context.Context, aconn.AConn, error) {
+			tch := make(chan struct {
+				ctx  context.Context
+				conn aconn.AConn
+				err  error
+			}, 2*runtime.NumCPU())
+			go func() {
+				ctx, conn, err := next(ctx)
+				tch <- struct {
+					ctx  context.Context
+					conn aconn.AConn
+					err  error
+				}{ctx, conn, err}
+			}()
+			var conn aconn.AConn
+			var err error
 			select {
-			case conn := <-ch:
-				return ctx, conn, nil
-			default:
+			case msg, ok := <-ch:
+				if !ok {
+					log.Println("udp chan closed")
+					return ctx, nil, ErrUDP
+				}
+				ctx = context.WithValue(ctx, consts.CTXSuperType, msg.T)
+				ctx = context.WithValue(ctx, consts.CTXSuperData, msg.MSG)
+				return ctx, nil, nil
+			case tm := <-tch:
+				ctx = tm.ctx
+				conn = tm.conn
+				err = tm.err
 			}
-			ctx, conn, err := next(ctx)
+			//ctx, conn, err := next(ctx)
 			ctx = context.WithValue(ctx, consts.CTXInTag, inTag)
 			if err != nil {
 				return ctx, nil, err
@@ -251,7 +217,7 @@ func udp(ctx context.Context, conn aconn.AConn) (context.Context, error) {
 		conn.Close()
 		return ctx, err
 	}
-	io.Copy(ioutil.Discard, conn)
+	go io.Copy(ioutil.Discard, conn)
 	return ctx, err
 }
 

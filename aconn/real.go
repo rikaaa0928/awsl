@@ -5,6 +5,9 @@ type Closer func() error
 type IOer func([]byte) (int, error)
 
 func CreateRealConn(c AConn) *RealConn {
+	if c == nil {
+		return nil
+	}
 	return &RealConn{
 		AConn: c,
 		close: c.Close,

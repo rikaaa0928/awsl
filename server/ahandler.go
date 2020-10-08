@@ -9,13 +9,23 @@ import (
 	"github.com/rikaaa0928/awsl/aconn"
 	"github.com/rikaaa0928/awsl/adialer"
 	"github.com/rikaaa0928/awsl/arouter"
+	"github.com/rikaaa0928/awsl/consts"
 	"github.com/rikaaa0928/awsl/utils"
 )
 
 type AHandler func(context.Context, aconn.AConn, arouter.ARouter, adialer.DialerFactory)
 
-var DefaultAHandler AHandler = func(ctx context.Context, sConn aconn.AConn, route arouter.ARouter,
-	getDialer adialer.DialerFactory) {
+var DefaultAHandler AHandler = func(ctx context.Context, sConn aconn.AConn, route arouter.ARouter, getDialer adialer.DialerFactory) {
+	superType := ctx.Value(consts.CTXSuperType)
+	if superType != nil {
+		switch superType.(string) {
+		case "udp":
+			log.Println("handel udp ", ctx.Value(consts.CTXSuperData))
+			return
+		default:
+		}
+		return
+	}
 	defer sConn.Close()
 	ctx = route(ctx, sConn.EndAddr())
 	dial := getDialer(ctx)

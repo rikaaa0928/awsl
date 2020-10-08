@@ -8,4 +8,6 @@ const (
 	CTXRoute       constString = "route"
 	CTXInTag       constString = "inTag"
 	CTXSendData    constString = "sendData"
+	CTXSuperType   constString = "superType"
+	CTXSuperData   constString = "superDatraa"
 )
