@@ -9,5 +9,5 @@ const (
 	CTXInTag       constString = "inTag"
 	CTXSendData    constString = "sendData"
 	CTXSuperType   constString = "superType"
-	CTXSuperData   constString = "superDatraa"
+	CTXSuperData   constString = "superData"
 )

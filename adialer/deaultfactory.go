@@ -23,6 +23,16 @@ func NewFactory(conf map[string]interface{}) DialerFactory {
 		tagConf := conf[tag].(map[string]interface{})
 		var d ADialer
 		typ := tagConf["type"].(string)
+		superTyp := ctx.Value(consts.CTXSuperType)
+		if superTyp != nil {
+			switch typ {
+			case "h2c":
+			case "free":
+			case "awsl":
+			default:
+			}
+			return d
+		}
 		switch typ {
 		case "h2c":
 			d = NewH2C(tagConf)
