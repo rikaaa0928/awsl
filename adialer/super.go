@@ -9,24 +9,41 @@ import (
 )
 
 var defaultPool = super{
-	pool: make(map[string]aconn.AConn),
+	pools: make(map[string]map[string]aconn.AConn),
 }
 
 type super struct {
 	sync.RWMutex
-	pool map[string]aconn.AConn
+	pools map[string]map[string]aconn.AConn
 }
 
-func getSuperConn(srcDst string, conf map[string]interface{}) ADialer {
-	defaultPool.Lock()
-	defer defaultPool.Unlock()
+func getSuperConn(tag, src, dst string, conf map[string]interface{}) ADialer {
+	defaultPool.RLock()
 	var conn aconn.AConn
 	var ok bool
 	var err error
-	conn, ok = defaultPool.pool[srcDst]
+	pool, ok := defaultPool.pools[tag]
 	if !ok {
-		defaultPool.pool[srcDst] = conn
+		defaultPool.RUnlock()
+		defaultPool.Lock()
+		defaultPool.pools[tag] = make(map[string]aconn.AConn)
+		defaultPool.Unlock()
+		defaultPool.RLock()
 	}
+	conn, ok = pool[src+"-"+dst]
+	if !ok {
+		defaultPool.RUnlock()
+		defaultPool.Lock()
+		switch conf["type"] {
+		case "free":
+
+		default:
+		}
+		defaultPool.pools[tag][src+"-"+dst] = conn
+		defaultPool.Unlock()
+		defaultPool.RLock()
+	}
+	defer defaultPool.RUnlock()
 	return func(ctx context.Context, _ net.Addr) (context.Context, aconn.AConn, error) {
 		return ctx, conn, err
 	}

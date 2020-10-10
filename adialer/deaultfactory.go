@@ -2,6 +2,8 @@ package adialer
 
 import (
 	"context"
+	"encoding/json"
+	"log"
 
 	"github.com/rikaaa0928/awsl/consts"
 )
@@ -22,17 +24,19 @@ func NewFactory(conf map[string]interface{}) DialerFactory {
 		}
 		tagConf := conf[tag].(map[string]interface{})
 		var d ADialer
-		typ := tagConf["type"].(string)
 		superTyp := ctx.Value(consts.CTXSuperType)
 		if superTyp != nil {
-			switch typ {
-			case "h2c":
-			case "free":
-			case "awsl":
-			default:
+			superData := ctx.Value(consts.CTXSuperData).(string)
+			var udpMsg consts.UDPMSG
+			err := json.Unmarshal([]byte(superData), &udpMsg)
+			if err != nil {
+				log.Println(err)
+				return d
 			}
+			d = getSuperConn(tag, udpMsg.SrcStr, udpMsg.DstStr, tagConf)
 			return d
 		}
+		typ := tagConf["type"].(string)
 		switch typ {
 		case "h2c":
 			d = NewH2C(tagConf)
