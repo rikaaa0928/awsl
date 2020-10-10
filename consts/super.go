@@ -6,11 +6,14 @@ import (
 	"fmt"
 	"net"
 	"strconv"
+
+	"github.com/rikaaa0928/awsl/aconn"
 )
 
 type SuperMSG struct {
-	T   string
-	MSG string
+	T    string
+	MSG  string
+	Conn aconn.AConn
 }
 
 type UDPMSG struct {

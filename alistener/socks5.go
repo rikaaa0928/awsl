@@ -56,7 +56,13 @@ func NewSocksAcceptMid(ctx context.Context, inTag string, conf map[string]interf
 					log.Println(err)
 					return
 				}
+				endAddr, err := net.ResolveUDPAddr("udp", u.DstStr)
+				if err != nil {
+					log.Println(err)
+					return
+				}
 				m := consts.SuperMSG{}
+				m.Conn = &udpConnWrapper{UDPConn: l, srcAddr: srcAddr, endAddr: endAddr}
 				m.T = "udp"
 				mb, err := json.Marshal(u)
 				if err != nil {
@@ -94,7 +100,7 @@ func NewSocksAcceptMid(ctx context.Context, inTag string, conf map[string]interf
 				}
 				ctx = context.WithValue(ctx, consts.CTXSuperType, msg.T)
 				ctx = context.WithValue(ctx, consts.CTXSuperData, msg.MSG)
-				return ctx, nil, nil
+				return ctx, msg.Conn, nil
 			case tm := <-tch:
 				ctx = tm.ctx
 				conn = tm.conn
@@ -293,4 +299,67 @@ func parseAddress(address string) (a byte, addr []byte, port []byte, err error) 
 	port = make([]byte, 2)
 	binary.BigEndian.PutUint16(port, uint16(i))
 	return
+}
+
+type udpConnWrapper struct {
+	*net.UDPConn
+	srcAddr *net.UDPAddr
+	endAddr net.Addr
+}
+
+func (c *udpConnWrapper) Write(b []byte) (n int, err error) {
+	uMsg := consts.UDPMSG{}
+	err = json.Unmarshal(b, &uMsg)
+	if err != nil {
+		log.Println("udp unmarshal error", err)
+		return
+	}
+	// TODO format response
+	n, err = c.UDPConn.WriteToUDP(uMsg.Data, c.srcAddr)
+	if err == nil {
+		log.Println("udp write to ", c.srcAddr, n, uMsg.Data)
+	}
+	return
+}
+
+func (c *udpConnWrapper) EndAddr() net.Addr {
+	return c.endAddr
+}
+
+func (c *udpConnWrapper) SetEndAddr(addr net.Addr) {
+	c.endAddr = addr
+}
+
+type datagram struct {
+	Rsv     []byte // 0x00 0x00
+	Frag    byte
+	Atyp    byte
+	DstAddr []byte
+	DstPort []byte // 2 bytes
+	Data    []byte
+}
+
+func newDatagram(atyp byte, dstaddr []byte, dstport []byte, data []byte) *datagram {
+	if atyp == 3 {
+		dstaddr = append([]byte{byte(len(dstaddr))}, dstaddr...)
+	}
+	return &datagram{
+		Rsv:     []byte{0x00, 0x00},
+		Frag:    0x00,
+		Atyp:    atyp,
+		DstAddr: dstaddr,
+		DstPort: dstport,
+		Data:    data,
+	}
+}
+
+func (d *datagram) Bytes() []byte {
+	b := make([]byte, 0)
+	b = append(b, d.Rsv...)
+	b = append(b, d.Frag)
+	b = append(b, d.Atyp)
+	b = append(b, d.DstAddr...)
+	b = append(b, d.DstPort...)
+	b = append(b, d.Data...)
+	return b
 }

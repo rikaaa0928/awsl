@@ -31,12 +31,13 @@ func getSuperConn(tag, src, dst string, conf map[string]interface{}) ADialer {
 		defaultPool.RLock()
 	}
 	conn, ok = pool[src+"-"+dst]
+	var d ADialer
 	if !ok {
 		defaultPool.RUnlock()
 		defaultPool.Lock()
 		switch conf["type"] {
 		case "free":
-
+			d = NewFreeUDP(src, dst)
 		default:
 		}
 		defaultPool.pools[tag][src+"-"+dst] = conn
@@ -45,6 +46,12 @@ func getSuperConn(tag, src, dst string, conf map[string]interface{}) ADialer {
 	}
 	defer defaultPool.RUnlock()
 	return func(ctx context.Context, _ net.Addr) (context.Context, aconn.AConn, error) {
+		if conn == nil {
+			ctx, conn, err = d(ctx, nil)
+			defaultPool.Lock()
+			defer defaultPool.Unlock()
+			defaultPool.pools[tag][src+"-"+dst] = conn
+		}
 		return ctx, conn, err
 	}
 }

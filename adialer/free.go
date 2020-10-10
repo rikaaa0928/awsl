@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"net"
 	"sync"
+	"time"
 
 	"github.com/rikaaa0928/awsl/aconn"
 	"github.com/rikaaa0928/awsl/consts"
@@ -18,22 +19,24 @@ var FreeTCP = func(ctx context.Context, addr net.Addr) (context.Context, aconn.A
 	return ctx, ac, err
 }
 
-var FreeUDP = func(ctx context.Context, src, dst string) (context.Context, aconn.AConn, error) {
-	uDst, err := net.ResolveUDPAddr("udp", dst)
-	if err != nil {
-		return ctx, nil, err
+func NewFreeUDP(src, dst string) ADialer {
+	return func(ctx context.Context, _ net.Addr) (context.Context, aconn.AConn, error) {
+		uDst, err := net.ResolveUDPAddr("udp", dst)
+		if err != nil {
+			return ctx, nil, err
+		}
+		//uSrc, err := net.ResolveUDPAddr("udp", src)
+		//if err != nil {
+		//	return ctx, nil, err
+		//}
+		c, err := net.DialUDP("udp", nil, uDst)
+		if err != nil {
+			return ctx, nil, err
+		}
+		ac := aconn.NewAConn(&udpConnWrapper{UDPConn: c, toAddr: uDst, src: src, dst: dst})
+		ac.SetEndAddr(uDst)
+		return ctx, ac, err
 	}
-	//uSrc, err := net.ResolveUDPAddr("udp", src)
-	//if err != nil {
-	//	return ctx, nil, err
-	//}
-	c, err := net.DialUDP("udp", nil, uDst)
-	if err != nil {
-		return ctx, nil, err
-	}
-	ac := aconn.NewAConn(&udpConnWrapper{UDPConn: c, toAddr: uDst, src: src, dst: dst})
-	ac.SetEndAddr(uDst)
-	return ctx, ac, err
 }
 
 type udpConnWrapper struct {
@@ -57,6 +60,7 @@ func (c *udpConnWrapper) Read(b []byte) (n int, err error) {
 	buf := utils.GetMem(65536)
 	defer utils.PutMem(buf)
 	var dstAddr *net.UDPAddr
+	c.UDPConn.SetReadDeadline(time.Now().Add(time.Minute))
 	n, dstAddr, err = c.UDPConn.ReadFromUDP(buf)
 	i := 0
 	for err != nil && i < 3 {
@@ -64,6 +68,7 @@ func (c *udpConnWrapper) Read(b []byte) (n int, err error) {
 		if err != nil {
 			continue
 		}
+		c.UDPConn.SetReadDeadline(time.Now().Add(time.Minute))
 		n, dstAddr, err = c.UDPConn.ReadFromUDP(buf)
 		if err != nil {
 			break
