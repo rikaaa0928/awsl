@@ -2,6 +2,7 @@ package adialer
 
 import (
 	"context"
+	"errors"
 	"net"
 	"sync"
 
@@ -46,6 +47,9 @@ func getSuperConn(tag, src, dst string, conf map[string]interface{}) ADialer {
 	}
 	defer defaultPool.RUnlock()
 	return func(ctx context.Context, _ net.Addr) (context.Context, aconn.AConn, error) {
+		if d == nil {
+			return ctx, nil, errors.New("udp dialer not supported yet for: " + conf["type"].(string))
+		}
 		if conn == nil {
 			ctx, conn, err = d(ctx, nil)
 			defaultPool.Lock()

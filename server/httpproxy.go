@@ -125,12 +125,15 @@ func (l *hpAListerWrapper) handler() AHandler {
 			defer resp.Body.Close()
 			utils.CopyHeader(hc.W.Header(), resp.Header)
 			hc.W.WriteHeader(resp.StatusCode)
-			io.Copy(hc.W, resp.Body)
+			buf := utils.GetMem(65536)
+			defer utils.PutMem(buf)
+			io.CopyBuffer(hc.W, resp.Body, buf)
+			// n, err := io.CopyBuffer(hc.W, resp.Body, buf)
+			//log.Println("http", n, err, cConn.EndAddr())
 			hc.Close()
 		} else {
 			DefaultAHandler(ctx, sConn, route, getDialer)
 		}
-
 	}
 }
 
