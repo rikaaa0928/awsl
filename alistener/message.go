@@ -9,6 +9,7 @@ import (
 	"github.com/rikaaa0928/awsl/aconn"
 	"github.com/rikaaa0928/awsl/consts"
 	"github.com/rikaaa0928/awsl/utils"
+	"github.com/rikaaa0928/awsl/utils/ctxdatamap"
 )
 
 func NewMessageMid(conf map[string]interface{}) AcceptMid {
@@ -40,29 +41,36 @@ func NewMessageMid(conf map[string]interface{}) AcceptMid {
 				conn.Close()
 				return ctx, nil, err
 			}
-			dataMap := map[string]interface{}{}
-			err = json.Unmarshal(data, &dataMap)
-			if err != nil {
+			ctx = ctxdatamap.Parse(ctx, data)
+			// dataMap := map[string]interface{}{}
+			// err = json.Unmarshal(data, &dataMap)
+			// if err != nil {
+			// 	conn.Close()
+			// 	return ctx, nil, err
+			// }
+			// rAuth, ok = dataMap["auth"]
+			// if !ok {
+			// 	conn.Close()
+			// 	return ctx, nil, errors.New("no auth in map. map:" + fmt.Sprintf("%+v", dataMap))
+			// }
+			rAuth = ctxdatamap.Get(ctx, consts.TransferAuth)
+			if rAuth == nil {
 				conn.Close()
-				return ctx, nil, err
-			}
-			rAuth, ok = dataMap["auth"]
-			if !ok {
-				conn.Close()
-				return ctx, nil, errors.New("no auth in map. map:" + fmt.Sprintf("%+v", dataMap))
+				return ctx, nil, errors.New("no auth in map. map:" + fmt.Sprintf("%+v", string(ctxdatamap.Bytes(ctx))))
 			}
 			if auth.(string) != rAuth.(string) {
 				conn.Close()
 				return ctx, nil, errors.New("auth failed")
 			}
 
-			addrStr, ok := dataMap["addr"]
-			if !ok {
+			//addrStr, ok := dataMap["addr"]
+			addrIn := ctxdatamap.Get(ctx, consts.TransferAddr)
+			if addrIn == nil {
 				conn.Close()
-				return ctx, nil, errors.New("no addr in map:" + fmt.Sprintf("%+v", dataMap))
+				return ctx, nil, errors.New("no addr in map:" + fmt.Sprintf("%+v", string(ctxdatamap.Bytes(ctx))))
 			}
 			addr := aconn.AddrInfo{}
-			err = json.Unmarshal([]byte(addrStr.(string)), &addr)
+			err = json.Unmarshal([]byte(addrIn.(string)), &addr)
 			if err != nil {
 				conn.Close()
 				return ctx, nil, err

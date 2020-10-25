@@ -33,7 +33,9 @@ func NewFreeUDP(src, dst string) ADialer {
 		if err != nil {
 			return ctx, nil, err
 		}
-		ac := aconn.NewAConn(&udpConnWrapper{UDPConn: c, toAddr: uDst, src: src, dst: dst})
+		lAddr := c.LocalAddr()
+		luAddr, _ := net.ResolveUDPAddr(lAddr.Network(), lAddr.String())
+		ac := aconn.NewAConn(&udpConnWrapper{UDPConn: c, toAddr: uDst, src: src, dst: dst, lAddr: luAddr})
 		ac.SetEndAddr(uDst)
 		return ctx, ac, err
 	}
@@ -43,12 +45,15 @@ type udpConnWrapper struct {
 	sync.Mutex
 	*net.UDPConn
 	toAddr *net.UDPAddr
+	lAddr  *net.UDPAddr
 	src    string
 	dst    string
 }
 
 func (c *udpConnWrapper) reDial() error {
-	c2, err := net.DialUDP("udp", nil, c.toAddr)
+	c.Lock()
+	defer c.Unlock()
+	c2, err := net.DialUDP("udp", c.lAddr, c.toAddr)
 	if err != nil {
 		return err
 	}
@@ -103,6 +108,7 @@ func (c *udpConnWrapper) Write(b []byte) (n int, err error) {
 	for err != nil && i < 3 {
 		err = c.reDial()
 		if err != nil {
+			time.Sleep(time.Second * time.Duration(i))
 			continue
 		}
 		n, err = c.UDPConn.Write(udpMsg.Data)

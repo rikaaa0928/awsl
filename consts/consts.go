@@ -7,7 +7,11 @@ const (
 	CTXSendAuth    constString = "sendAuth"
 	CTXRoute       constString = "route"
 	CTXInTag       constString = "inTag"
-	CTXSendData    constString = "sendData"
-	CTXSuperType   constString = "superType"
-	CTXSuperData   constString = "superData"
+	//CTXSendData    constString = "sendData"
+	CTXSuperType constString = "superType"
+	CTXSuperData constString = "superData"
+	CTXSuperID   constString = "superID"
+
+	TransferAuth = "auth"
+	TransferAddr = "addr"
 )

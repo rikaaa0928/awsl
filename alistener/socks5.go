@@ -314,8 +314,13 @@ func (c *udpConnWrapper) Write(b []byte) (n int, err error) {
 		log.Println("udp unmarshal error", err)
 		return
 	}
-	// TODO format response
-	n, err = c.UDPConn.WriteToUDP(uMsg.Data, c.srcAddr)
+	a, addr, port, err := parseAddress(uMsg.DstStr)
+	if err != nil {
+		log.Println(err)
+		return
+	}
+	data2Write := newDatagram(a, addr, port, uMsg.Data)
+	n, err = c.UDPConn.WriteToUDP(data2Write.Bytes(), c.srcAddr)
 	if err == nil {
 		log.Println("udp write to ", c.srcAddr, n, uMsg.Data)
 	}
