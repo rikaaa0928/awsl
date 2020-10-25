@@ -1,18 +1,34 @@
-package consts
+package superlib
 
 import (
 	"bytes"
+	"context"
 	"encoding/binary"
 	"fmt"
 	"net"
 	"strconv"
+	"sync"
 
 	"github.com/rikaaa0928/awsl/aconn"
+	"github.com/rikaaa0928/awsl/utils/bitmap"
 )
+
+type constString string
+
+const CTXSuperID constString = "superID"
+
+var num uint32
+var l sync.Mutex
+var bm *bitmap.BitMap
+
+func init() {
+	bm = bitmap.NewBitMap(0xffffffff)
+}
 
 type SuperMSG struct {
 	T    string
 	MSG  string
+	ID   uint32
 	Conn aconn.AConn
 }
 
@@ -78,4 +94,32 @@ func NewUDPMSG(bb []byte, srcAddr net.Addr) (m UDPMSG, err error) {
 	m.DstStr = net.JoinHostPort(s, p)
 	m.SrcStr = srcAddr.String()
 	return
+}
+
+func GetID(ctx context.Context) string {
+	v := ctx.Value(CTXSuperID)
+	if v == nil {
+		return "0"
+	}
+	return strconv.FormatUint(uint64(v.(uint32)), 10)
+}
+
+func SetID(ctx context.Context, v uint32) context.Context {
+	return context.WithValue(ctx, CTXSuperID, v)
+}
+
+func NewID() uint32 {
+	l.Lock()
+	defer func() {
+		num++
+		l.Unlock()
+	}()
+	for !bm.Set(num) {
+		num++
+	}
+	return num
+}
+
+func RestoreID(id uint32) {
+	bm.Del(id)
 }

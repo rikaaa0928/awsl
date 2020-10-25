@@ -12,10 +12,11 @@ import (
 	"github.com/rikaaa0928/awsl/utils/ctxdatamap"
 )
 
-func NewMessageMid(conf map[string]interface{}) AcceptMid {
+func NewMessageMid(ctx context.Context, inTag string, conf map[string]interface{}) AcceptMid {
 	return func(next Acceptor) Acceptor {
 		return func(ctx context.Context) (context.Context, aconn.AConn, error) {
 			ctx, conn, err := next(ctx)
+			ctx = context.WithValue(ctx, consts.CTXInTag, inTag)
 			auth, ok := conf["auth"]
 			if !ok {
 				conn.Close()

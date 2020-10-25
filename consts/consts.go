@@ -10,8 +10,8 @@ const (
 	//CTXSendData    constString = "sendData"
 	CTXSuperType constString = "superType"
 	CTXSuperData constString = "superData"
-	CTXSuperID   constString = "superID"
 
-	TransferAuth = "auth"
-	TransferAddr = "addr"
+	TransferAuth   = "auth"
+	TransferAddr   = "addr"
+	TransferSupper = "super"
 )

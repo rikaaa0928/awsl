@@ -18,7 +18,7 @@ type super struct {
 	pools map[string]map[string]aconn.AConn
 }
 
-func getSuperConn(tag, src, dst string, conf map[string]interface{}) ADialer {
+func getSuperConn(tag, superID, src, dst string, conf map[string]interface{}) ADialer {
 	defaultPool.RLock()
 	var conn aconn.AConn
 	var ok bool
@@ -41,7 +41,7 @@ func getSuperConn(tag, src, dst string, conf map[string]interface{}) ADialer {
 			d = NewFreeUDP(src, dst)
 		default:
 		}
-		defaultPool.pools[tag][src+"-"+dst] = conn
+		defaultPool.pools[tag][superID+"-"+dst] = conn
 		defaultPool.Unlock()
 		defaultPool.RLock()
 	}

@@ -16,13 +16,18 @@ import (
 	"github.com/rikaaa0928/awsl/aconn"
 	"github.com/rikaaa0928/awsl/consts"
 	"github.com/rikaaa0928/awsl/utils"
+	"github.com/rikaaa0928/awsl/utils/superlib"
 )
 
 // ErrUDP ErrUDP
 var ErrUDP = errors.New("udp error")
 
 func NewSocksAcceptMid(ctx context.Context, inTag string, conf map[string]interface{}) AcceptMid {
-	ch := make(chan consts.SuperMSG, 2*runtime.NumCPU())
+	type msgStruct struct {
+		superlib.SuperMSG
+		Conn aconn.AConn
+	}
+	ch := make(chan msgStruct, 2*runtime.NumCPU())
 	go func() {
 		closed := false
 		udpAddr, err := net.ResolveUDPAddr("udp", net.JoinHostPort(conf["host"].(string), strconv.Itoa(int(conf["port"].(float64)))))
@@ -51,7 +56,7 @@ func NewSocksAcceptMid(ctx context.Context, inTag string, conf map[string]interf
 				continue
 			}
 			go func(addr *net.UDPAddr, b []byte) {
-				u, err := consts.NewUDPMSG(b, srcAddr)
+				u, err := superlib.NewUDPMSG(b, srcAddr)
 				if err != nil {
 					log.Println(err)
 					return
@@ -61,7 +66,7 @@ func NewSocksAcceptMid(ctx context.Context, inTag string, conf map[string]interf
 					log.Println(err)
 					return
 				}
-				m := consts.SuperMSG{}
+				m := msgStruct{}
 				m.Conn = &udpConnWrapper{UDPConn: l, srcAddr: srcAddr, endAddr: endAddr}
 				m.T = "udp"
 				mb, err := json.Marshal(u)
@@ -92,6 +97,7 @@ func NewSocksAcceptMid(ctx context.Context, inTag string, conf map[string]interf
 			}()
 			var conn aconn.AConn
 			var err error
+			ctx = context.WithValue(ctx, consts.CTXInTag, inTag)
 			select {
 			case msg, ok := <-ch:
 				if !ok {
@@ -100,6 +106,7 @@ func NewSocksAcceptMid(ctx context.Context, inTag string, conf map[string]interf
 				}
 				ctx = context.WithValue(ctx, consts.CTXSuperType, msg.T)
 				ctx = context.WithValue(ctx, consts.CTXSuperData, msg.MSG)
+				ctx = superlib.SetID(ctx, msg.ID)
 				return ctx, msg.Conn, nil
 			case tm := <-tch:
 				ctx = tm.ctx
@@ -107,7 +114,6 @@ func NewSocksAcceptMid(ctx context.Context, inTag string, conf map[string]interf
 				err = tm.err
 			}
 			//ctx, conn, err := next(ctx)
-			ctx = context.WithValue(ctx, consts.CTXInTag, inTag)
 			if err != nil {
 				return ctx, nil, err
 			}
@@ -308,7 +314,7 @@ type udpConnWrapper struct {
 }
 
 func (c *udpConnWrapper) Write(b []byte) (n int, err error) {
-	uMsg := consts.UDPMSG{}
+	uMsg := superlib.UDPMSG{}
 	err = json.Unmarshal(b, &uMsg)
 	if err != nil {
 		log.Println("udp unmarshal error", err)

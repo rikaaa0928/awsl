@@ -8,8 +8,8 @@ import (
 	"time"
 
 	"github.com/rikaaa0928/awsl/aconn"
-	"github.com/rikaaa0928/awsl/consts"
 	"github.com/rikaaa0928/awsl/utils"
+	"github.com/rikaaa0928/awsl/utils/superlib"
 )
 
 var FreeTCP = func(ctx context.Context, addr net.Addr) (context.Context, aconn.AConn, error) {
@@ -83,7 +83,7 @@ func (c *udpConnWrapper) Read(b []byte) (n int, err error) {
 	if err != nil {
 		return
 	}
-	udp := consts.UDPMSG{
+	udp := superlib.UDPMSG{
 		DstStr: dstAddr.String(),
 		SrcStr: c.src,
 		Data:   buf[:n],
@@ -98,7 +98,7 @@ func (c *udpConnWrapper) Read(b []byte) (n int, err error) {
 }
 
 func (c *udpConnWrapper) Write(b []byte) (n int, err error) {
-	var udpMsg consts.UDPMSG
+	var udpMsg superlib.UDPMSG
 	err = json.Unmarshal(b, &udpMsg)
 	if err != nil {
 		return -1, err
