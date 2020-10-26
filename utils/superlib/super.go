@@ -9,7 +9,6 @@ import (
 	"strconv"
 	"sync"
 
-	"github.com/rikaaa0928/awsl/aconn"
 	"github.com/rikaaa0928/awsl/utils/bitmap"
 )
 
@@ -26,10 +25,9 @@ func init() {
 }
 
 type SuperMSG struct {
-	T    string
-	MSG  string
-	ID   uint32
-	Conn aconn.AConn
+	T   string
+	MSG string
+	ID  uint32
 }
 
 type UDPMSG struct {
