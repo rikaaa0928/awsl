@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"encoding/binary"
-	"encoding/json"
 	"errors"
 	"io"
 	"io/ioutil"
@@ -12,6 +11,7 @@ import (
 	"net"
 	"runtime"
 	"strconv"
+	"time"
 
 	"github.com/rikaaa0928/awsl/aconn"
 	"github.com/rikaaa0928/awsl/consts"
@@ -23,11 +23,11 @@ import (
 var ErrUDP = errors.New("udp error")
 
 func NewSocksAcceptMid(ctx context.Context, inTag string, conf map[string]interface{}) AcceptMid {
-	type msgStruct struct {
-		superlib.SuperMSG
-		Conn aconn.AConn
-	}
-	ch := make(chan msgStruct, 2*runtime.NumCPU())
+	// type msgStruct struct {
+	// 	superlib.SuperMSG
+	// 	Conn aconn.AConn
+	// }
+	ch := make(chan aconn.AConn, 2*runtime.NumCPU())
 	go func() {
 		closed := false
 		udpAddr, err := net.ResolveUDPAddr("udp", net.JoinHostPort(conf["host"].(string), strconv.Itoa(int(conf["port"].(float64)))))
@@ -56,6 +56,9 @@ func NewSocksAcceptMid(ctx context.Context, inTag string, conf map[string]interf
 				continue
 			}
 			go func(addr *net.UDPAddr, b []byte) {
+				defer func() {
+					recover()
+				}()
 				u, err := superlib.NewUDPMSG(b, srcAddr)
 				if err != nil {
 					log.Println(err)
@@ -66,17 +69,30 @@ func NewSocksAcceptMid(ctx context.Context, inTag string, conf map[string]interf
 					log.Println(err)
 					return
 				}
-				m := msgStruct{}
-				m.Conn = &udpConnWrapper{UDPConn: l, srcAddr: srcAddr, endAddr: endAddr}
-				m.T = "udp"
-				mb, err := json.Marshal(u)
-				if err != nil {
-					log.Println(err)
-					return
-				}
-				m.MSG = string(mb)
-				log.Println("udp data come", u)
-				ch <- m
+				conn := &udpConnWrapper{UDPConn: l, srcAddr: srcAddr, endAddr: endAddr, readChan: make(chan []byte, 1)}
+				go func() {
+					defer func() {
+						recover()
+					}()
+					t := time.NewTimer(time.Minute * 10)
+					select {
+					case <-t.C:
+						close(conn.readChan)
+					case conn.readChan <- u.Data:
+					}
+				}()
+				ch <- conn
+				// m := msgStruct{}
+				// m.Conn = &udpConnWrapper{UDPConn: l, srcAddr: srcAddr, endAddr: endAddr}
+				// m.T = "udp"
+				// mb, err := json.Marshal(u)
+				// if err != nil {
+				// 	log.Println(err)
+				// 	return
+				// }
+				// m.MSG = string(mb)
+				// log.Println("udp data come", u)
+				// ch <- m
 			}(srcAddr, buf[0:n])
 		}
 	}()
@@ -99,15 +115,15 @@ func NewSocksAcceptMid(ctx context.Context, inTag string, conf map[string]interf
 			var err error
 			ctx = context.WithValue(ctx, consts.CTXInTag, inTag)
 			select {
-			case msg, ok := <-ch:
+			case conn, ok := <-ch:
 				if !ok {
 					log.Println("udp chan closed")
 					return ctx, nil, ErrUDP
 				}
-				ctx = context.WithValue(ctx, consts.CTXSuperType, msg.T)
-				ctx = context.WithValue(ctx, consts.CTXSuperData, msg.MSG)
-				ctx = superlib.SetID(ctx, msg.ID)
-				return ctx, msg.Conn, nil
+				// ctx = context.WithValue(ctx, consts.CTXSuperType, msg.T)
+				// ctx = context.WithValue(ctx, consts.CTXSuperData, msg.MSG)
+				// //ctx = superlib.SetID(ctx, msg.ID)
+				return ctx, conn, nil
 			case tm := <-tch:
 				ctx = tm.ctx
 				conn = tm.conn
@@ -309,28 +325,55 @@ func parseAddress(address string) (a byte, addr []byte, port []byte, err error) 
 
 type udpConnWrapper struct {
 	*net.UDPConn
-	srcAddr *net.UDPAddr
-	endAddr net.Addr
+	srcAddr  *net.UDPAddr
+	endAddr  net.Addr
+	readChan chan []byte
 }
 
 func (c *udpConnWrapper) Write(b []byte) (n int, err error) {
-	uMsg := superlib.UDPMSG{}
-	err = json.Unmarshal(b, &uMsg)
-	if err != nil {
-		log.Println("udp unmarshal error", err)
-		return
-	}
-	a, addr, port, err := parseAddress(uMsg.DstStr)
+	// uMsg := superlib.UDPMSG{}
+	// err = json.Unmarshal(b, &uMsg)
+	// if err != nil {
+	// 	log.Println("udp unmarshal error", err)
+	// 	return
+	// }
+	a, addr, port, err := parseAddress(c.endAddr.String())
 	if err != nil {
 		log.Println(err)
 		return
 	}
-	data2Write := newDatagram(a, addr, port, uMsg.Data)
+	data2Write := newDatagram(a, addr, port, b)
 	n, err = c.UDPConn.WriteToUDP(data2Write.Bytes(), c.srcAddr)
 	if err == nil {
-		log.Println("udp write to ", c.srcAddr, n, uMsg.Data)
+		log.Println("udp write to ", c.srcAddr, n, string(b))
 	}
 	return
+}
+
+func (c *udpConnWrapper) Read(b []byte) (n int, err error) {
+	t := time.NewTimer(time.Minute * 10)
+	select {
+	case <-t.C:
+		defer func() {
+			recover()
+		}()
+		close(c.readChan)
+		return 0, errors.New("time out")
+	case d, ok := <-c.readChan:
+		if !ok {
+			return 0, errors.New("udp readChan closed")
+		}
+		n = copy(b, d)
+		return
+	}
+}
+
+func (c *udpConnWrapper) Close() error {
+	defer func() {
+		recover()
+	}()
+	close(c.readChan)
+	return nil
 }
 
 func (c *udpConnWrapper) EndAddr() net.Addr {

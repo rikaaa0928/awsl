@@ -10,7 +10,7 @@ import (
 )
 
 var TestFactory = func(_ context.Context, _ ...[]byte) ADialer {
-	return FreeTCP
+	return Free
 }
 
 func NewFactory(conf map[string]interface{}) DialerFactory {
@@ -47,7 +47,7 @@ func NewFactory(conf map[string]interface{}) DialerFactory {
 		case "h2c":
 			d = NewH2C(tagConf)
 		case "free":
-			d = FreeTCP
+			d = Free
 		case "awsl":
 			d = NewAWSL(tagConf)
 		default:
