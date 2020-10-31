@@ -110,6 +110,9 @@ func NewID() uint32 {
 	l.Lock()
 	defer func() {
 		num++
+		if num >= 0xffffffff {
+			num = 0
+		}
 		l.Unlock()
 	}()
 	for !bm.Set(num) {

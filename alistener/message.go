@@ -16,6 +16,9 @@ func NewMessageMid(ctx context.Context, inTag string, conf map[string]interface{
 	return func(next Acceptor) Acceptor {
 		return func(ctx context.Context) (context.Context, aconn.AConn, error) {
 			ctx, conn, err := next(ctx)
+			if err != nil {
+				return ctx, conn, err
+			}
 			ctx = context.WithValue(ctx, consts.CTXInTag, inTag)
 			auth, ok := conf["auth"]
 			if !ok {
