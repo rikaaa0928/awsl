@@ -2,7 +2,7 @@ package adialer
 
 func DefaultDialMids(d ADialer, ty string) ADialer {
 	switch ty {
-	case "awsl", "tcp":
+	case "awsl", "tcp", "quic":
 		d = NewAddrDataMid(d)
 		d = NewSendDataMid(d)
 	default:

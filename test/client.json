@@ -19,7 +19,7 @@
     ],
     "outs": {
         "default": {
-            "type": "awsl",
+            "type": "quic",
             "host": "lo.bilibili.network",
             "port": 12347,
             "uri": "awsl/",

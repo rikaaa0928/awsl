@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"net"
+	"time"
 
 	"github.com/rikaaa0928/awsl/aconn"
 	"github.com/rikaaa0928/awsl/consts"
@@ -64,6 +65,7 @@ func NewSendDataMid(next ADialer) ADialer {
 			conn.Close()
 			return ctx, nil, err
 		}
+		time.Sleep(100 * time.Millisecond)
 		//fmt.Println("client write data done ", ctx.Value(ctxdatamap.CTXMapData))
 		return ctx, conn, nil
 	}

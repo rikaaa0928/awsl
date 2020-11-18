@@ -12,7 +12,7 @@ import (
 	"github.com/rikaaa0928/awsl/utils/ctxdatamap"
 )
 
-func NewMessageMid(ctx context.Context, inTag string, conf map[string]interface{}) AcceptMid {
+func NewMessageMid(_ context.Context, inTag string, conf map[string]interface{}) AcceptMid {
 	return func(next Acceptor) Acceptor {
 		return func(ctx context.Context) (context.Context, aconn.AConn, error) {
 			ctx, conn, err := next(ctx)
@@ -44,17 +44,7 @@ func NewMessageMid(ctx context.Context, inTag string, conf map[string]interface{
 				return ctx, nil, err
 			}
 			ctx = ctxdatamap.Parse(ctx, data)
-			// dataMap := map[string]interface{}{}
-			// err = json.Unmarshal(data, &dataMap)
-			// if err != nil {
-			// 	conn.Close()
-			// 	return ctx, nil, err
-			// }
-			// rAuth, ok = dataMap["auth"]
-			// if !ok {
-			// 	conn.Close()
-			// 	return ctx, nil, errors.New("no auth in map. map:" + fmt.Sprintf("%+v", dataMap))
-			// }
+
 			rAuth = ctxdatamap.Get(ctx, consts.TransferAuth)
 			if rAuth == nil {
 				conn.Close()
@@ -65,7 +55,6 @@ func NewMessageMid(ctx context.Context, inTag string, conf map[string]interface{
 				return ctx, nil, errors.New("auth failed")
 			}
 
-			//addrStr, ok := dataMap["addr"]
 			addrIn := ctxdatamap.Get(ctx, consts.TransferAddr)
 			if addrIn == nil {
 				conn.Close()
@@ -78,7 +67,6 @@ func NewMessageMid(ctx context.Context, inTag string, conf map[string]interface{
 				return ctx, nil, err
 			}
 			conn.SetEndAddr(addr)
-			//fmt.Println("server read message done ", ctx.Value(ctxdatamap.CTXMapData))
 			return ctx, conn, nil
 		}
 	}

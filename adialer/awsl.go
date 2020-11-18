@@ -47,6 +47,8 @@ func NewAWSL(conf map[string]interface{}) ADialer {
 			AWSLConf.Inited = true
 		}
 		AWSLConf.Unlock()
+	} else {
+		AWSLConf.RUnlock()
 	}
 	return func(ctx context.Context, addr net.Addr) (context.Context, aconn.AConn, error) {
 		tcpConn, err := net.Dial("tcp", net.JoinHostPort(AWSLConf.remoteHost, AWSLConf.remotePort))

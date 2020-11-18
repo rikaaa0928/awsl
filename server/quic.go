@@ -3,7 +3,9 @@ package server
 import (
 	"context"
 	"crypto/tls"
+	"errors"
 	"net"
+	"runtime"
 	"strconv"
 
 	"github.com/lucas-clemente/quic-go"
@@ -36,7 +38,29 @@ func (s BaseQUIC) Listen() alistener.AListener {
 	if err != nil {
 		panic(err)
 	}
-	return &quicAListerWrapper{listener}
+	ctx, cancel := context.WithCancel(context.Background())
+	l := &quicAListerWrapper{c: make(chan aconn.AConn, 2*runtime.NumCPU()), cancel: cancel}
+	go func() {
+		for !l.closed {
+			sess, err := listener.Accept(ctx)
+			if err != nil {
+				continue
+			}
+			go func() {
+				for !l.closed {
+					stream, err := sess.AcceptStream(ctx)
+					if err != nil {
+						break
+					}
+					if !l.closed {
+						l.c <- aconn.NewAConn(streamConn{Stream: stream, l: sess.LocalAddr(), r: sess.RemoteAddr()})
+					}
+				}
+			}()
+		}
+		close(l.c)
+	}()
+	return l
 }
 
 func (s BaseQUIC) Handler() AHandler {
@@ -44,16 +68,36 @@ func (s BaseQUIC) Handler() AHandler {
 }
 
 type quicAListerWrapper struct {
-	quic.Listener
+	c      chan aconn.AConn
+	closed bool
+	cancel context.CancelFunc
 }
 
 func (l *quicAListerWrapper) Accept(ctx context.Context) (context.Context, aconn.AConn, error) {
-	conn, err := l.Listener.Accept(ctx)
-	if err != nil {
-		return ctx, nil, err
+	select {
+	case c, ok := <-l.c:
+		if !ok {
+			return ctx, nil, errors.New("quicAListerWrapper closed")
+		}
+		return ctx, c, nil
 	}
-	return ctx, aconn.NewAConn(conn), nil
 }
 func (l *quicAListerWrapper) Close() error {
-	return l.Listener.Close()
+	l.closed = true
+	l.cancel()
+	return nil
+}
+
+type streamConn struct {
+	quic.Stream
+	l net.Addr
+	r net.Addr
+}
+
+func (c streamConn) RemoteAddr() net.Addr {
+	return c.r
+}
+
+func (c streamConn) LocalAddr() net.Addr {
+	return c.l
 }

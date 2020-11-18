@@ -1,7 +1,7 @@
 {
     "ins": {
         "awsl": {
-            "type": "awsl",
+            "type": "quic",
             "host": "127.0.0.1",
             "port": 12347,
             "uri": "awsl/",
