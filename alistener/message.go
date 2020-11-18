@@ -78,7 +78,7 @@ func NewMessageMid(ctx context.Context, inTag string, conf map[string]interface{
 				return ctx, nil, err
 			}
 			conn.SetEndAddr(addr)
-			fmt.Println("server read message done ", ctx.Value(ctxdatamap.CTXMapData))
+			//fmt.Println("server read message done ", ctx.Value(ctxdatamap.CTXMapData))
 			return ctx, conn, nil
 		}
 	}

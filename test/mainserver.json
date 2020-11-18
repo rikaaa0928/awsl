@@ -10,7 +10,7 @@
             "auth": "1234567890"
         },
         "awsl": {
-            "type": "h2c",
+            "type": "awsl",
             "host": "127.0.0.1",
             "port": 12347,
             "uri": "awsl/",

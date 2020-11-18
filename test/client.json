@@ -27,7 +27,7 @@
             "skipVerify": true
         },
         "default": {
-            "type": "h2c",
+            "type": "awsl",
             "host": "lo.bilibili.network",
             "port": 12347,
             "uri": "awsl/",

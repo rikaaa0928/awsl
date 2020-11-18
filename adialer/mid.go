@@ -3,7 +3,6 @@ package adialer
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"net"
 
 	"github.com/rikaaa0928/awsl/aconn"
@@ -65,7 +64,7 @@ func NewSendDataMid(next ADialer) ADialer {
 			conn.Close()
 			return ctx, nil, err
 		}
-		fmt.Println("client write data done ", ctx.Value(ctxdatamap.CTXMapData))
+		//fmt.Println("client write data done ", ctx.Value(ctxdatamap.CTXMapData))
 		return ctx, conn, nil
 	}
 }
