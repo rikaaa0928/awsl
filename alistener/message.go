@@ -34,9 +34,7 @@ func NewMessageMid(ctx context.Context, inTag string, conf map[string]interface{
 					return ctx, conn, nil
 				}
 			}
-			if err != nil {
-				return ctx, nil, err
-			}
+
 			buf := utils.GetMem(65536)
 			defer utils.PutMem(buf)
 			n, err := conn.Read(buf)
@@ -80,6 +78,7 @@ func NewMessageMid(ctx context.Context, inTag string, conf map[string]interface{
 				return ctx, nil, err
 			}
 			conn.SetEndAddr(addr)
+			fmt.Println("server read message done ", ctx.Value(ctxdatamap.CTXMapData))
 			return ctx, conn, nil
 		}
 	}

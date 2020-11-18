@@ -1,14 +1,11 @@
-https://lo.bilibili.network:443 {
-    tls self_signed
-    log /h2c stdout
-    log /awsl stdout
-    errors stdout
-    proxy /h2c https://lo.bilibili.network:1444 {
-        transparent
-        insecure_skip_verify
-    }
-    proxy /awsl https://lo.bilibili.network:1443 {
-        websocket
-        insecure_skip_verify
+lo.bilibili.network
+log
+tls internal
+reverse_proxy /awsl/ {
+    to https://lo.bilibili.network:12347
+    header_up Host {http.request.hostport}
+    transport http {
+        tls_insecure_skip_verify
     }
 }
+
