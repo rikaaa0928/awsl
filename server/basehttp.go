@@ -32,12 +32,6 @@ func NewHTTPServer(typ, host, uri, cert, key string, port int) *HTTP {
 		key:  key,
 	}
 	switch typ {
-	case "h2c":
-		s.l = &h2cAListerWrapper{
-			&hbaseAListerWrapper{
-				cons: make(chan aconn.AConn, 2*runtime.NumCPU()),
-			},
-		}
 	case "awsl":
 		s.l = &awslAListerWrapper{
 			&hbaseAListerWrapper{

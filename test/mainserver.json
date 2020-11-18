@@ -1,14 +1,5 @@
 {
     "ins": {
-        "h2c": {
-            "type": "h2c",
-            "host": "127.0.0.1",
-            "port": 12346,
-            "uri": "h2c/",
-            "cert": "./test/server.crt",
-            "key": "./test/server.key",
-            "auth": "1234567890"
-        },
         "awsl": {
             "type": "awsl",
             "host": "127.0.0.1",

@@ -44,8 +44,6 @@ func NewFactory(conf map[string]interface{}) DialerFactory {
 		}
 		typ := tagConf["type"].(string)
 		switch typ {
-		case "h2c":
-			d = NewH2C(tagConf)
 		case "free":
 			d = Free
 		case "awsl":
