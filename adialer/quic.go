@@ -59,7 +59,7 @@ func NewQUIC(conf map[string]interface{}) ADialer {
 			session = QUICConf.sess
 		}
 		for i := 0; i < 2; i++ {
-			stream, err = session.OpenStreamSync(context.Background())
+			stream, err = session.OpenStreamSync(ctx)
 			if err != nil {
 				var err2 error
 				session, err2 = quic.DialAddr(net.JoinHostPort(QUICConf.remoteHost, QUICConf.remotePort), tlsConf, nil)
