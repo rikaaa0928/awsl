@@ -20,10 +20,6 @@ var num uint32
 var l sync.Mutex
 var bm *bitmap.BitMap
 
-func init() {
-	bm = bitmap.NewBitMap(0xffffffff)
-}
-
 type SuperMSG struct {
 	T   string
 	MSG string
@@ -115,6 +111,9 @@ func NewID() uint32 {
 		}
 		l.Unlock()
 	}()
+	if bm == nil {
+		bm = bitmap.NewBitMap(0xffffffff)
+	}
 	for !bm.Set(num) {
 		num++
 	}
