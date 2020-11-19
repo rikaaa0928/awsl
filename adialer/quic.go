@@ -3,13 +3,14 @@ package adialer
 import (
 	"context"
 	"crypto/tls"
+	"net"
+	"strconv"
+	"sync"
+
 	"github.com/lucas-clemente/quic-go"
 	"github.com/rikaaa0928/awsl/aconn"
 	"github.com/rikaaa0928/awsl/consts"
 	"github.com/rikaaa0928/awsl/utils/ctxdatamap"
-	"net"
-	"strconv"
-	"sync"
 )
 
 var QUICConf = struct {
@@ -19,6 +20,7 @@ var QUICConf = struct {
 	remotePort string
 	auth       string
 	skipVerify bool
+	sess       quic.Session
 }{}
 
 func NewQUIC(conf map[string]interface{}) ADialer {
@@ -44,12 +46,32 @@ func NewQUIC(conf map[string]interface{}) ADialer {
 			InsecureSkipVerify: QUICConf.skipVerify,
 			NextProtos:         []string{"awsl-quic"},
 		}
-		session, err := quic.DialAddr(net.JoinHostPort(QUICConf.remoteHost, QUICConf.remotePort), tlsConf, nil)
-		if err != nil {
-			return ctx, nil, err
+		var session quic.Session
+		var err error
+		var stream quic.Stream
+		if QUICConf.sess == nil {
+			session, err = quic.DialAddr(net.JoinHostPort(QUICConf.remoteHost, QUICConf.remotePort), tlsConf, nil)
+			if err != nil {
+				return ctx, nil, err
+			}
+			QUICConf.sess = session
+		} else {
+			session = QUICConf.sess
 		}
-
-		stream, err := session.OpenStreamSync(context.Background())
+		for i := 0; i < 2; i++ {
+			stream, err = session.OpenStreamSync(context.Background())
+			if err != nil {
+				var err2 error
+				session, err2 = quic.DialAddr(net.JoinHostPort(QUICConf.remoteHost, QUICConf.remotePort), tlsConf, nil)
+				if err2 != nil {
+					QUICConf.sess = nil
+					return ctx, nil, err
+				}
+				QUICConf.sess = session
+			} else {
+				break
+			}
+		}
 		if err != nil {
 			return ctx, nil, err
 		}
