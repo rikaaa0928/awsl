@@ -2,9 +2,11 @@ package alistener
 
 import (
 	"context"
+	"encoding/binary"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 
 	"github.com/rikaaa0928/awsl/aconn"
 	"github.com/rikaaa0928/awsl/consts"
@@ -34,21 +36,28 @@ func NewMessageMid(_ context.Context, inTag string, conf map[string]interface{})
 					return ctx, conn, nil
 				}
 			}
-
-			buf := utils.GetMem(65536)
-			defer utils.PutMem(buf)
-			n, err := conn.Read(buf)
-			data := buf[:n]
+			lenBytes := utils.GetMem(4)
+			defer utils.PutMem(lenBytes)
+			_, err = io.ReadFull(conn, lenBytes)
 			if err != nil {
 				conn.Close()
 				return ctx, nil, err
 			}
+			length := binary.BigEndian.Uint32(lenBytes)
+			buf := utils.GetMem(int(length))
+			defer utils.PutMem(buf)
+			n, err := io.ReadFull(conn, buf)
+			if err != nil {
+				conn.Close()
+				return ctx, nil, err
+			}
+			data := buf[:n]
 			ctx = ctxdatamap.Parse(ctx, data)
-
+			//fmt.Println(length, len(data), string(data), string(ctxdatamap.Bytes(ctx)))
 			rAuth = ctxdatamap.Get(ctx, consts.TransferAuth)
 			if rAuth == nil {
 				conn.Close()
-				return ctx, nil, errors.New("no auth in map. map:" + fmt.Sprintf("%+v", string(ctxdatamap.Bytes(ctx))))
+				return ctx, nil, errors.New("no auth in map. map:" + fmt.Sprintf("%+v", string(ctxdatamap.Bytes(ctx))) + "\nread message data:" + string(data))
 			}
 			if auth.(string) != rAuth.(string) {
 				conn.Close()
@@ -58,7 +67,7 @@ func NewMessageMid(_ context.Context, inTag string, conf map[string]interface{})
 			addrIn := ctxdatamap.Get(ctx, consts.TransferAddr)
 			if addrIn == nil {
 				conn.Close()
-				return ctx, nil, errors.New("no addr in map:" + fmt.Sprintf("%+v", string(ctxdatamap.Bytes(ctx))))
+				return ctx, nil, errors.New("no addr in map:" + fmt.Sprintf("%+v", string(ctxdatamap.Bytes(ctx))) + "\nread message data:" + string(data))
 			}
 			addr := aconn.AddrInfo{}
 			err = json.Unmarshal([]byte(addrIn.(string)), &addr)

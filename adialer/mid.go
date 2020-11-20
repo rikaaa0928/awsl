@@ -2,12 +2,13 @@ package adialer
 
 import (
 	"context"
+	"encoding/binary"
 	"encoding/json"
 	"net"
-	"time"
 
 	"github.com/rikaaa0928/awsl/aconn"
 	"github.com/rikaaa0928/awsl/consts"
+	"github.com/rikaaa0928/awsl/utils"
 	"github.com/rikaaa0928/awsl/utils/ctxdatamap"
 )
 
@@ -57,15 +58,19 @@ func NewSendDataMid(next ADialer) ADialer {
 		}
 		//data := ctx.Value(consts.CTXSendData)
 		data := ctxdatamap.Bytes(ctx)
-		if len(data) == 0 {
+		length := len(data)
+		if length == 0 {
 			return ctx, conn, nil
 		}
-		_, err = conn.Write(data)
+		lenBytes := utils.GetMem(4)
+		defer utils.PutMem(lenBytes)
+		binary.BigEndian.PutUint32(lenBytes, uint32(length))
+		_, err = conn.Write(append(lenBytes, data...))
 		if err != nil {
 			conn.Close()
 			return ctx, nil, err
 		}
-		time.Sleep(100 * time.Millisecond)
+		//time.Sleep(500 * time.Millisecond)
 		//fmt.Println("client write data done ", ctx.Value(ctxdatamap.CTXMapData))
 		return ctx, conn, nil
 	}
