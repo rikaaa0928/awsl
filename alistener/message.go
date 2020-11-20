@@ -44,8 +44,9 @@ func NewMessageMid(_ context.Context, inTag string, conf map[string]interface{})
 				return ctx, nil, err
 			}
 			length := binary.BigEndian.Uint32(lenBytes)
-			buf := utils.GetMem(int(length))
-			defer utils.PutMem(buf)
+			buf := make([]byte, length)
+			//buf := utils.GetMem(int(length))
+			//defer utils.PutMem(buf)
 			n, err := io.ReadFull(conn, buf)
 			if err != nil {
 				conn.Close()
