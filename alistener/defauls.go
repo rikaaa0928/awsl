@@ -3,7 +3,7 @@ package alistener
 import (
 	"context"
 
-	"github.com/rikaaa0928/awsl/consts"
+	"github.com/rikaaa0928/awsl/global"
 )
 
 func DefaultAcceptMids(ctx context.Context, l AcceptMidor, ty, tag string, conf map[string]interface{}) {
@@ -14,5 +14,5 @@ func DefaultAcceptMids(ctx context.Context, l AcceptMidor, ty, tag string, conf 
 		l.RegisterAcceptor(NewMessageMid(ctx, tag, conf))
 	default:
 	}
-	ctx = context.WithValue(ctx, consts.CTXInTag, tag)
+	ctx = context.WithValue(ctx, global.CTXInTag, tag)
 }

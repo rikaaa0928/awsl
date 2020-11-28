@@ -14,7 +14,7 @@ import (
 	"time"
 
 	"github.com/rikaaa0928/awsl/aconn"
-	"github.com/rikaaa0928/awsl/consts"
+	"github.com/rikaaa0928/awsl/global"
 	"github.com/rikaaa0928/awsl/utils"
 	"github.com/rikaaa0928/awsl/utils/superlib"
 )
@@ -102,15 +102,15 @@ func NewSocksAcceptMid(ctx context.Context, inTag string, conf map[string]interf
 			}()
 			var conn aconn.AConn
 			var err error
-			ctx = context.WithValue(ctx, consts.CTXInTag, inTag)
+			ctx = context.WithValue(ctx, global.CTXInTag, inTag)
 			select {
 			case conn, ok := <-ch:
 				if !ok {
 					log.Println("udp chan closed")
 					return ctx, nil, ErrUDP
 				}
-				// ctx = context.WithValue(ctx, consts.CTXSuperType, msg.T)
-				// ctx = context.WithValue(ctx, consts.CTXSuperData, msg.MSG)
+				// ctx = context.WithValue(ctx, global.CTXSuperType, msg.T)
+				// ctx = context.WithValue(ctx, global.CTXSuperData, msg.MSG)
 				// //ctx = superlib.SetID(ctx, msg.ID)
 				return ctx, conn, nil
 			case tm := <-tch:

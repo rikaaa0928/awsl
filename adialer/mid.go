@@ -7,7 +7,7 @@ import (
 	"net"
 
 	"github.com/rikaaa0928/awsl/aconn"
-	"github.com/rikaaa0928/awsl/consts"
+	"github.com/rikaaa0928/awsl/global"
 	"github.com/rikaaa0928/awsl/utils"
 	"github.com/rikaaa0928/awsl/utils/ctxdatamap"
 )
@@ -18,7 +18,7 @@ func NewAddrDataMid(next ADialer) ADialer {
 		if err != nil {
 			return ctx, nil, err
 		}
-		// data := ctx.Value(consts.CTXSendData)
+		// data := ctx.Value(global.CTXSendData)
 		// var dataMap map[string]interface{}
 		// if data == nil {
 		// 	dataMap = make(map[string]interface{})
@@ -38,14 +38,14 @@ func NewAddrDataMid(next ADialer) ADialer {
 			conn.Close()
 			return ctx, nil, err
 		}
-		ctx = ctxdatamap.Set(ctx, consts.TransferAddr, string(addrBytes))
+		ctx = ctxdatamap.Set(ctx, global.TransferAddr, string(addrBytes))
 		// dataMap["addr"] = string(addrBytes)
 		// dataBytes, err := json.Marshal(dataMap)
 		// if err != nil {
 		// 	conn.Close()
 		// 	return ctx, nil, err
 		// }
-		// ctx = context.WithValue(ctx, consts.CTXSendData, string(dataBytes))
+		// ctx = context.WithValue(ctx, global.CTXSendData, string(dataBytes))
 		return ctx, conn, nil
 	}
 }
@@ -56,7 +56,7 @@ func NewSendDataMid(next ADialer) ADialer {
 		if err != nil {
 			return ctx, nil, err
 		}
-		//data := ctx.Value(consts.CTXSendData)
+		//data := ctx.Value(global.CTXSendData)
 		data := ctxdatamap.Bytes(ctx)
 		length := len(data)
 		if length == 0 {

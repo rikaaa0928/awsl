@@ -2,7 +2,7 @@ package adialer
 
 import (
 	"context"
-	"github.com/rikaaa0928/awsl/consts"
+	"github.com/rikaaa0928/awsl/global"
 )
 
 var TestFactory = func(_ context.Context, _ ...[]byte) ADialer {
@@ -11,7 +11,7 @@ var TestFactory = func(_ context.Context, _ ...[]byte) ADialer {
 
 func NewFactory(conf map[string]interface{}) DialerFactory {
 	return func(ctx context.Context, _ ...[]byte) ADialer {
-		outTag := ctx.Value(consts.CTXRoute)
+		outTag := ctx.Value(global.CTXRoute)
 		if outTag == nil {
 			return nil
 		}
@@ -21,16 +21,16 @@ func NewFactory(conf map[string]interface{}) DialerFactory {
 		}
 		tagConf := conf[tag].(map[string]interface{})
 		var d ADialer
-		//superTyp := ctx.Value(consts.CTXSuperType)
+		//superTyp := ctx.Value(global.CTXSuperType)
 		//if superTyp != nil {
-		//	superData := ctx.Value(consts.CTXSuperData).(string)
+		//	superData := ctx.Value(global.CTXSuperData).(string)
 		//	var udpMsg superlib.UDPMSG
 		//	err := json.Unmarshal([]byte(superData), &udpMsg)
 		//	if err != nil {
 		//		log.Println(err)
 		//		return d
 		//	}
-		//	inTag := ctx.Value(consts.CTXInTag)
+		//	inTag := ctx.Value(global.CTXInTag)
 		//	if inTag == nil {
 		//		log.Println("nil inTag")
 		//		return d

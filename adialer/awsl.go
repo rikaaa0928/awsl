@@ -9,7 +9,7 @@ import (
 	"sync"
 
 	"github.com/rikaaa0928/awsl/aconn"
-	"github.com/rikaaa0928/awsl/consts"
+	"github.com/rikaaa0928/awsl/global"
 	"github.com/rikaaa0928/awsl/utils/ctxdatamap"
 	"golang.org/x/net/websocket"
 )
@@ -63,8 +63,8 @@ func NewAWSL(conf map[string]interface{}) ADialer {
 		}
 		conn := aconn.NewAConn(ws)
 		conn.SetEndAddr(addr)
-		//ctx = context.WithValue(ctx, consts.CTXSendAuth, AWSLConf.auth)
-		ctx = ctxdatamap.Set(ctx, consts.TransferAuth, AWSLConf.auth)
+		//ctx = context.WithValue(ctx, global.CTXSendAuth, AWSLConf.auth)
+		ctx = ctxdatamap.Set(ctx, global.TransferAuth, AWSLConf.auth)
 		return ctx, conn, nil
 	}
 }

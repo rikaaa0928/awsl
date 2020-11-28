@@ -9,7 +9,7 @@ import (
 
 	"github.com/lucas-clemente/quic-go"
 	"github.com/rikaaa0928/awsl/aconn"
-	"github.com/rikaaa0928/awsl/consts"
+	"github.com/rikaaa0928/awsl/global"
 	"github.com/rikaaa0928/awsl/utils/ctxdatamap"
 )
 
@@ -77,7 +77,7 @@ func NewQUIC(conf map[string]interface{}) ADialer {
 		}
 		conn := aconn.NewAConn(streamConn{Stream: stream, l: session.LocalAddr(), r: session.RemoteAddr()})
 		conn.SetEndAddr(addr)
-		ctx = ctxdatamap.Set(ctx, consts.TransferAuth, QUICConf.auth)
+		ctx = ctxdatamap.Set(ctx, global.TransferAuth, QUICConf.auth)
 		return ctx, conn, nil
 	}
 }

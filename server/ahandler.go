@@ -27,7 +27,8 @@ var DefaultAHandler AHandler = func(ctx context.Context, sConn aconn.AConn, rout
 		log.Println("dial error: " + err.Error())
 		return
 	}
-	defer cConn.Close()
+	rcConn:=aconn.CreateRealConn(cConn)
+	defer rcConn.Close()
 	w := sync.WaitGroup{}
 	w.Add(2)
 	// debug := strings.Contains(sConn.EndAddr().String(), "steam")
@@ -36,10 +37,10 @@ var DefaultAHandler AHandler = func(ctx context.Context, sConn aconn.AConn, rout
 		buf := utils.GetMem(65536)
 		defer utils.PutMem(buf)
 		if debug {
-			n, err := io.CopyBuffer(cConn, sConn, buf)
+			n, err := io.CopyBuffer(rcConn, sConn, buf)
 			log.Println("io.CopyBuffer(cConn, sConn, buf)", sConn.EndAddr().String(), n, err)
 		} else {
-			io.CopyBuffer(cConn, sConn, buf)
+			io.CopyBuffer(rcConn, sConn, buf)
 		}
 		w.Done()
 	}()
@@ -47,10 +48,10 @@ var DefaultAHandler AHandler = func(ctx context.Context, sConn aconn.AConn, rout
 		buf := utils.GetMem(65536)
 		defer utils.PutMem(buf)
 		if debug {
-			n, err := io.CopyBuffer(sConn, cConn, buf)
+			n, err := io.CopyBuffer(sConn, rcConn, buf)
 			log.Println("io.CopyBuffer(sConn, cConn, buf)", sConn.EndAddr().String(), n, err)
 		} else {
-			io.CopyBuffer(sConn, cConn, buf)
+			io.CopyBuffer(sConn, rcConn, buf)
 		}
 		w.Done()
 	}()

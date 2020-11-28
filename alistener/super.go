@@ -5,7 +5,7 @@ import (
 	"errors"
 
 	"github.com/rikaaa0928/awsl/aconn"
-	"github.com/rikaaa0928/awsl/consts"
+	"github.com/rikaaa0928/awsl/global"
 	"github.com/rikaaa0928/awsl/utils/superlib"
 )
 
@@ -18,7 +18,7 @@ func NewSupperMid(ctx context.Context, inTag string, conf map[string]interface{}
 			if err != nil {
 				return ctx, conn, nil
 			}
-			if ctx.Value(consts.TransferSupper) == nil {
+			if ctx.Value(global.TransferSupper) == nil {
 				return ctx, conn, nil
 			}
 			go func() {

@@ -9,7 +9,7 @@ import (
 	"io"
 
 	"github.com/rikaaa0928/awsl/aconn"
-	"github.com/rikaaa0928/awsl/consts"
+	"github.com/rikaaa0928/awsl/global"
 	"github.com/rikaaa0928/awsl/utils"
 	"github.com/rikaaa0928/awsl/utils/ctxdatamap"
 )
@@ -21,13 +21,13 @@ func NewMessageMid(_ context.Context, inTag string, conf map[string]interface{})
 			if err != nil {
 				return ctx, conn, err
 			}
-			ctx = context.WithValue(ctx, consts.CTXInTag, inTag)
+			ctx = context.WithValue(ctx, global.CTXInTag, inTag)
 			auth, ok := conf["auth"]
 			if !ok {
 				conn.Close()
 				return ctx, nil, errors.New("no auth in conf. map:" + fmt.Sprintf("%+v", conf))
 			}
-			rAuth := ctx.Value(consts.CTXReceiveAuth)
+			rAuth := ctx.Value(global.CTXReceiveAuth)
 			if conn.EndAddr() != nil && rAuth != nil {
 				if auth.(string) != rAuth.(string) {
 					conn.Close()
@@ -55,7 +55,7 @@ func NewMessageMid(_ context.Context, inTag string, conf map[string]interface{})
 			data := buf[:n]
 			ctx = ctxdatamap.Parse(ctx, data)
 			//fmt.Println(length, len(data), string(data), string(ctxdatamap.Bytes(ctx)))
-			rAuth = ctxdatamap.Get(ctx, consts.TransferAuth)
+			rAuth = ctxdatamap.Get(ctx, global.TransferAuth)
 			if rAuth == nil {
 				conn.Close()
 				return ctx, nil, errors.New("no auth in map. map:" + fmt.Sprintf("%+v", string(ctxdatamap.Bytes(ctx))) + "\nread message data:" + string(data))
@@ -65,7 +65,7 @@ func NewMessageMid(_ context.Context, inTag string, conf map[string]interface{})
 				return ctx, nil, errors.New("auth failed")
 			}
 
-			addrIn := ctxdatamap.Get(ctx, consts.TransferAddr)
+			addrIn := ctxdatamap.Get(ctx, global.TransferAddr)
 			if addrIn == nil {
 				conn.Close()
 				return ctx, nil, errors.New("no addr in map:" + fmt.Sprintf("%+v", string(ctxdatamap.Bytes(ctx))) + "\nread message data:" + string(data))
