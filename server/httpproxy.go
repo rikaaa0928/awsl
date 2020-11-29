@@ -111,10 +111,12 @@ func (l *hpAListerWrapper) handler() AHandler {
 				log.Println("dial error: " + err.Error())
 				return
 			}
-			defer cConn.Close()
+			rcConn := aconn.CreateRealConn(cConn)
+			rcConn.RegisterCloser(aconn.NewMetricsMid(ctx, "", "", rcConn.EndAddr().String()).MetricsClose)
+			defer rcConn.Close()
 
 			trans := http.Transport{DialContext: func(ctx context.Context, network, addr string) (net.Conn, error) {
-				return cConn, nil
+				return rcConn, nil
 			}}
 			resp, err := trans.RoundTrip(hc.R)
 			if err != nil {

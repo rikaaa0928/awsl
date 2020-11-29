@@ -48,6 +48,7 @@ var DefaultObject Object = func(ctx context.Context, wg *sync.WaitGroup, tag str
 		}
 		go func() {
 			rc := aconn.CreateRealConn(ac)
+			rc.RegisterCloser(aconn.NewMetricsMid(ctx, tag, typ, rc.EndAddr().String()).MetricsClose)
 			outsConf, err := c.GetMap("outs")
 			if err != nil {
 				log.Println("c.GetMap('outs'), err: ", err)

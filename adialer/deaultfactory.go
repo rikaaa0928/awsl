@@ -21,23 +21,6 @@ func NewFactory(conf map[string]interface{}) DialerFactory {
 		}
 		tagConf := conf[tag].(map[string]interface{})
 		var d ADialer
-		//superTyp := ctx.Value(global.CTXSuperType)
-		//if superTyp != nil {
-		//	superData := ctx.Value(global.CTXSuperData).(string)
-		//	var udpMsg superlib.UDPMSG
-		//	err := json.Unmarshal([]byte(superData), &udpMsg)
-		//	if err != nil {
-		//		log.Println(err)
-		//		return d
-		//	}
-		//	inTag := ctx.Value(global.CTXInTag)
-		//	if inTag == nil {
-		//		log.Println("nil inTag")
-		//		return d
-		//	}
-		//	d = getSuperConn(tag, inTag.(string)+":"+superlib.GetID(ctx), udpMsg.SrcStr, udpMsg.DstStr, tagConf)
-		//	return d
-		//}
 		typ := tagConf["type"].(string)
 		switch typ {
 		case "free":

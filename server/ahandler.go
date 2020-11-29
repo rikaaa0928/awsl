@@ -27,7 +27,8 @@ var DefaultAHandler AHandler = func(ctx context.Context, sConn aconn.AConn, rout
 		log.Println("dial error: " + err.Error())
 		return
 	}
-	rcConn:=aconn.CreateRealConn(cConn)
+	rcConn := aconn.CreateRealConn(cConn)
+	rcConn.RegisterCloser(aconn.NewMetricsMid(ctx, "", "", rcConn.EndAddr().String()).MetricsClose)
 	defer rcConn.Close()
 	w := sync.WaitGroup{}
 	w.Add(2)

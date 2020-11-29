@@ -15,6 +15,7 @@ import (
 func StartMetrics(c config.Configs) {
 	var err error
 	global.MetricsPort, err = c.GetInt("metrics")
+	log.Println(global.MetricsPort)
 	if err != nil || global.MetricsPort == 0 {
 		return
 	}

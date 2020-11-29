@@ -3,12 +3,12 @@ package main
 import (
 	"context"
 	"flag"
-	"log"
 	"runtime"
 	"sync"
 
 	"github.com/rikaaa0928/awsl/config"
 	"github.com/rikaaa0928/awsl/object"
+	"github.com/rikaaa0928/awsl/utils/metrics"
 )
 
 func main() {
@@ -22,7 +22,7 @@ func main() {
 		panic(err)
 	}
 	ins, err := conf.GetMap("ins")
-	log.Println(len(ins))
+	go metrics.StartMetrics(conf)
 	wg := &sync.WaitGroup{}
 	for k := range ins {
 		wg.Add(1)
