@@ -65,6 +65,7 @@ func NewAWSL(conf map[string]interface{}) ADialer {
 		conn.SetEndAddr(addr)
 		//ctx = context.WithValue(ctx, global.CTXSendAuth, AWSLConf.auth)
 		ctx = ctxdatamap.Set(ctx, global.TransferAuth, AWSLConf.auth)
+		ctx = context.WithValue(ctx, global.CTXOutType, "awsl")
 		return ctx, conn, nil
 	}
 }

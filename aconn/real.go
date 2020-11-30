@@ -1,5 +1,11 @@
 package aconn
 
+import (
+	"time"
+
+	"github.com/rikaaa0928/awsl/global"
+)
+
 type Closer func() error
 
 type IOer func([]byte) (int, error)
@@ -24,6 +30,7 @@ type RealConn struct {
 }
 
 func (c *RealConn) Read(p []byte) (n int, err error) {
+	c.SetReadDeadline(time.Now().Add(global.TimeOut))
 	return c.read(p)
 }
 

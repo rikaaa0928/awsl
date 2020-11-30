@@ -8,9 +8,11 @@ import (
 	"time"
 
 	"github.com/rikaaa0928/awsl/aconn"
+	"github.com/rikaaa0928/awsl/global"
 )
 
 var Free = func(ctx context.Context, addr net.Addr) (context.Context, aconn.AConn, error) {
+	ctx = context.WithValue(ctx, global.CTXOutType, "free")
 	if strings.ToLower(addr.Network()) == "udp" {
 		log.Println("dial udp : " + addr.String())
 		uDst, err := net.ResolveUDPAddr("udp", addr.String())

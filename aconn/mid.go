@@ -27,9 +27,9 @@ func NewMetricsMid(ctx context.Context, tag, typ, endAddr string) MetricsMid {
 	return MetricsMid{typ: typ, tag: tag, endAddr: endAddr}
 }
 
-func NewMetricsMidWithCTX(ctx context.Context, conf map[string]interface{}, endAddr string) MetricsMid {
+func NewMetricsMidForOut(ctx context.Context, endAddr string) MetricsMid {
 	if global.MetricsPort > 0 {
-		outTag := ctx.Value(global.CTXRoute)
+		outTag := ctx.Value(global.CTXOutTag)
 		if outTag == nil {
 			return MetricsMid{disabled: true}
 		}
@@ -37,8 +37,14 @@ func NewMetricsMidWithCTX(ctx context.Context, conf map[string]interface{}, endA
 		if !ok {
 			return MetricsMid{disabled: true}
 		}
-		tagConf := conf[tag].(map[string]interface{})
-		typ := tagConf["type"].(string)
+		outType := ctx.Value(global.CTXOutType)
+		if outType == nil {
+			return MetricsMid{disabled: true}
+		}
+		typ, ok := outType.(string)
+		if !ok {
+			return MetricsMid{disabled: true}
+		}
 		realTimeConnectionNum.With(prometheus.Labels{"type": typ, "tag": tag, "end_addr": endAddr}).Inc()
 		return MetricsMid{typ: typ, tag: tag, endAddr: endAddr}
 	}

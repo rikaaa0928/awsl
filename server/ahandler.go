@@ -28,7 +28,7 @@ var DefaultAHandler AHandler = func(ctx context.Context, sConn aconn.AConn, rout
 		return
 	}
 	rcConn := aconn.CreateRealConn(cConn)
-	rcConn.RegisterCloser(aconn.NewMetricsMid(ctx, "", "", rcConn.EndAddr().String()).MetricsClose)
+	rcConn.RegisterCloser(aconn.NewMetricsMidForOut(ctx, rcConn.EndAddr().String()).MetricsClose)
 	defer rcConn.Close()
 	w := sync.WaitGroup{}
 	w.Add(2)

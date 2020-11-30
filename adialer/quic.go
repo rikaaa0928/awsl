@@ -78,6 +78,7 @@ func NewQUIC(conf map[string]interface{}) ADialer {
 		conn := aconn.NewAConn(streamConn{Stream: stream, l: session.LocalAddr(), r: session.RemoteAddr()})
 		conn.SetEndAddr(addr)
 		ctx = ctxdatamap.Set(ctx, global.TransferAuth, QUICConf.auth)
+		ctx = context.WithValue(ctx, global.CTXOutType, "quic")
 		return ctx, conn, nil
 	}
 }

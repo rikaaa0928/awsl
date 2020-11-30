@@ -2,6 +2,7 @@ package adialer
 
 import (
 	"context"
+
 	"github.com/rikaaa0928/awsl/global"
 )
 
@@ -11,7 +12,7 @@ var TestFactory = func(_ context.Context, _ ...[]byte) ADialer {
 
 func NewFactory(conf map[string]interface{}) DialerFactory {
 	return func(ctx context.Context, _ ...[]byte) ADialer {
-		outTag := ctx.Value(global.CTXRoute)
+		outTag := ctx.Value(global.CTXOutTag)
 		if outTag == nil {
 			return nil
 		}

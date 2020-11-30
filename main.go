@@ -3,10 +3,13 @@ package main
 import (
 	"context"
 	"flag"
+	"log"
 	"runtime"
 	"sync"
+	"time"
 
 	"github.com/rikaaa0928/awsl/config"
+	"github.com/rikaaa0928/awsl/global"
 	"github.com/rikaaa0928/awsl/object"
 	"github.com/rikaaa0928/awsl/utils/metrics"
 )
@@ -22,7 +25,15 @@ func main() {
 		panic(err)
 	}
 	ins, err := conf.GetMap("ins")
+	if err != nil {
+		panic(err)
+	}
 	go metrics.StartMetrics(conf)
+	timeOut, err := conf.GetInt("timeout")
+	if err == nil {
+		log.Println("timeout : ", timeOut)
+		global.TimeOut = time.Duration(timeOut) * time.Second
+	}
 	wg := &sync.WaitGroup{}
 	for k := range ins {
 		wg.Add(1)

@@ -4,9 +4,11 @@ type constString string
 
 const (
 	CTXReceiveAuth constString = "receiveAuth"
-	CTXSendAuth    constString = "sendAuth"
-	CTXRoute       constString = "route"
-	CTXInTag       constString = "inTag"
+	//CTXSendAuth    constString = "sendAuth"
+	CTXOutTag  constString = "outTag"
+	CTXOutType constString = "outType"
+	CTXInTag   constString = "inTag"
+	CTXInType  constString = "inType"
 	//CTXSendData    constString = "sendData"
 	CTXSuperType constString = "superType"
 	CTXSuperData constString = "superData"
