@@ -6,7 +6,6 @@ import (
 	"log"
 	"runtime"
 	"sync"
-	"time"
 
 	"github.com/rikaaa0928/awsl/config"
 	"github.com/rikaaa0928/awsl/global"
@@ -32,7 +31,7 @@ func main() {
 	timeOut, err := conf.GetInt("timeout")
 	if err == nil {
 		log.Println("timeout : ", timeOut)
-		global.TimeOut = time.Duration(timeOut) * time.Second
+		global.TimeOut = timeOut
 	}
 	wg := &sync.WaitGroup{}
 	for k := range ins {

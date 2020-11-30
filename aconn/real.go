@@ -30,7 +30,7 @@ type RealConn struct {
 }
 
 func (c *RealConn) Read(p []byte) (n int, err error) {
-	c.SetReadDeadline(time.Now().Add(global.TimeOut))
+	c.SetReadDeadline(time.Now().Add(time.Duration(global.TimeOut) * time.Second))
 	return c.read(p)
 }
 
