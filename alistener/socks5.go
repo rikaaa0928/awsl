@@ -11,6 +11,7 @@ import (
 	"net"
 	"runtime"
 	"strconv"
+	"sync"
 	"time"
 
 	"github.com/rikaaa0928/awsl/aconn"
@@ -75,7 +76,7 @@ func NewSocksAcceptMid(ctx context.Context, inTag string, conf map[string]interf
 							t := time.NewTimer(time.Minute * 10)
 							select {
 							case <-t.C:
-								close(conn.readChan)
+								conn.Close()
 							case conn.readChan <- u.Data:
 							}
 						}()
@@ -314,9 +315,10 @@ func parseAddress(address string) (a byte, addr []byte, port []byte, err error) 
 
 type udpConnWrapper struct {
 	*net.UDPConn
-	srcAddr  *net.UDPAddr
-	endAddr  net.Addr
-	readChan chan []byte
+	srcAddr   *net.UDPAddr
+	endAddr   net.Addr
+	readChan  chan []byte
+	closeOnce sync.Once
 }
 
 func (c *udpConnWrapper) Write(b []byte) (n int, err error) {
@@ -344,9 +346,14 @@ func (c *udpConnWrapper) Read(b []byte) (n int, err error) {
 	select {
 	case <-t.C:
 		defer func() {
-			recover()
+			err := recover()
+			if err != nil {
+				log.Println("unexpected, udpConnWrapper.Read() close readChan twice with closeOnce; err: ", err)
+			}
 		}()
-		close(c.readChan)
+		c.closeOnce.Do(func() {
+			close(c.readChan)
+		})
 		return 0, errors.New("time out")
 	case d, ok := <-c.readChan:
 		if !ok {
@@ -359,9 +366,14 @@ func (c *udpConnWrapper) Read(b []byte) (n int, err error) {
 
 func (c *udpConnWrapper) Close() error {
 	defer func() {
-		recover()
+		err := recover()
+		if err != nil {
+			log.Println("unexpected, udpConnWrapper.Close() close readChan twice with closeOnce; err: ", err)
+		}
 	}()
-	close(c.readChan)
+	c.closeOnce.Do(func() {
+		close(c.readChan)
+	})
 	return nil
 }
 
