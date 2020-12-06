@@ -37,6 +37,8 @@ var DefaultAHandler AHandler = func(ctx context.Context, sConn aconn.AConn, rout
 	// debug := strings.Contains(sConn.EndAddr().String(), "steam")
 	debug := false
 	go func() {
+		defer sConn.Close()
+		defer rcConn.Close()
 		buf := utils.GetMem(65536)
 		defer utils.PutMem(buf)
 		if debug {
@@ -48,6 +50,8 @@ var DefaultAHandler AHandler = func(ctx context.Context, sConn aconn.AConn, rout
 		w.Done()
 	}()
 	go func() {
+		defer sConn.Close()
+		defer rcConn.Close()
 		buf := utils.GetMem(65536)
 		defer utils.PutMem(buf)
 		if debug {
