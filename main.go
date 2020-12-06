@@ -7,6 +7,8 @@ import (
 	"runtime"
 	"sync"
 
+	"cloud.google.com/go/profiler"
+
 	"github.com/rikaaa0928/awsl/config"
 	"github.com/rikaaa0928/awsl/global"
 	"github.com/rikaaa0928/awsl/object"
@@ -23,6 +25,31 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
+
+	gcp, err := conf.GetBool("gcp")
+	if err == nil {
+		global.GCP = gcp
+	}
+	if global.GCP {
+		cfg := profiler.Config{
+			Service:        "awsl",
+			ServiceVersion: "1.0.0",
+			// ProjectID must be set if not running on GCP.
+			// ProjectID: "my-project",
+
+			// For OpenCensus users:
+			// To see Profiler agent spans in APM backend,
+			// set EnableOCTelemetry to true
+			EnableOCTelemetry: true,
+		}
+
+		// Profiler initialization, best done as early as possible.
+		if err := profiler.Start(cfg); err != nil {
+			// TODO: Handle error.
+			log.Println(err)
+		}
+	}
+
 	ins, err := conf.GetMap("ins")
 	if err != nil {
 		panic(err)

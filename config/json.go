@@ -107,12 +107,23 @@ func (c *JsonConfig) GetInt(path ...string) (int64, error) {
 	}
 	return reInt, nil
 }
+func (c *JsonConfig) GetBool(path ...string) (bool, error) {
+	v, err := c.Get(path...)
+	if err != nil {
+		return false, err
+	}
+	reBool, err := strconv.ParseBool(strings.Trim(string(v.(json.RawMessage)), "\""))
+	if err != nil {
+		return false, err
+	}
+	return reBool, nil
+}
 func (c *JsonConfig) GetFloat(path ...string) (float64, error) {
 	v, err := c.Get(path...)
 	if err != nil {
 		return 0, err
 	}
-	re, err := strconv.ParseFloat(string(v.(json.RawMessage)), 64)
+	re, err := strconv.ParseFloat(strings.Trim(string(v.(json.RawMessage)), "\""), 64)
 	if err != nil {
 		return 0, err
 	}
