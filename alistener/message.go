@@ -8,6 +8,8 @@ import (
 	"fmt"
 	"io"
 
+	"go.opentelemetry.io/otel/propagation"
+
 	"github.com/rikaaa0928/awsl/aconn"
 	"github.com/rikaaa0928/awsl/global"
 	"github.com/rikaaa0928/awsl/utils"
@@ -54,6 +56,11 @@ func NewMessageMid(_ context.Context, inTag string, conf map[string]interface{})
 			}
 			data := buf[:n]
 			ctx = ctxdatamap.Parse(ctx, data)
+
+			// tracing
+			prop := propagation.TraceContext{}
+			ctx = prop.Extract(ctx, ctxdatamap.TextMapCarrier(ctx))
+
 			//fmt.Println(length, len(data), string(data), string(ctxdatamap.Bytes(ctx)))
 			rAuth = ctxdatamap.Get(ctx, global.TransferAuth)
 			if rAuth == nil {

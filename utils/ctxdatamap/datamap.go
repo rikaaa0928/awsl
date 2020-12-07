@@ -47,6 +47,13 @@ func Parse(ctx context.Context, data []byte) context.Context {
 	return ctx
 }
 
+func MergeMap(ctx context.Context, data map[string]interface{}) context.Context {
+	for k, v := range data {
+		ctx = Set(ctx, k, v)
+	}
+	return ctx
+}
+
 func Bytes(ctx context.Context) []byte {
 	d := ctx.Value(CTXMapData)
 	if d == nil {
@@ -57,4 +64,32 @@ func Bytes(ctx context.Context) []byte {
 		return nil
 	}
 	return b
+}
+
+func TextMapCarrier(ctx context.Context) textMapCarrier {
+	d := ctx.Value(CTXMapData)
+	if d == nil {
+		d = make(map[string]interface{})
+	}
+	m := d.(map[string]interface{})
+	return textMapCarrier(m)
+}
+
+type textMapCarrier map[string]interface{}
+
+func (c textMapCarrier) Get(key string) string {
+	out, ok := c[key]
+	if !ok {
+		return ""
+	}
+	str, ok := out.(string)
+	if !ok {
+		return ""
+	}
+	return str
+}
+
+// Set stores the key-value pair.
+func (c textMapCarrier) Set(key string, value string) {
+	c[key] = value
 }

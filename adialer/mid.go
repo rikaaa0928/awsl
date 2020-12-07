@@ -6,6 +6,8 @@ import (
 	"encoding/json"
 	"net"
 
+	"go.opentelemetry.io/otel/propagation"
+
 	"github.com/rikaaa0928/awsl/aconn"
 	"github.com/rikaaa0928/awsl/global"
 	"github.com/rikaaa0928/awsl/utils"
@@ -18,17 +20,6 @@ func NewAddrDataMid(next ADialer) ADialer {
 		if err != nil {
 			return ctx, nil, err
 		}
-		// data := ctx.Value(global.CTXSendData)
-		// var dataMap map[string]interface{}
-		// if data == nil {
-		// 	dataMap = make(map[string]interface{})
-		// } else {
-		// 	err = json.Unmarshal([]byte(data.(string)), &dataMap)
-		// 	if err != nil {
-		// 		conn.Close()
-		// 		return ctx, nil, err
-		// 	}
-		// }
 		ai, ok := addr.(aconn.AddrInfo)
 		if !ok {
 			(&ai).Parse(addr.Network(), addr.String())
@@ -39,13 +30,6 @@ func NewAddrDataMid(next ADialer) ADialer {
 			return ctx, nil, err
 		}
 		ctx = ctxdatamap.Set(ctx, global.TransferAddr, string(addrBytes))
-		// dataMap["addr"] = string(addrBytes)
-		// dataBytes, err := json.Marshal(dataMap)
-		// if err != nil {
-		// 	conn.Close()
-		// 	return ctx, nil, err
-		// }
-		// ctx = context.WithValue(ctx, global.CTXSendData, string(dataBytes))
 		return ctx, conn, nil
 	}
 }
@@ -56,7 +40,13 @@ func NewSendDataMid(next ADialer) ADialer {
 		if err != nil {
 			return ctx, nil, err
 		}
-		//data := ctx.Value(global.CTXSendData)
+
+		// tracing
+		carrier := ctxdatamap.TextMapCarrier(ctx)
+		prop := propagation.TraceContext{}
+		prop.Inject(ctx, carrier)
+		ctx = ctxdatamap.MergeMap(ctx, carrier)
+
 		data := ctxdatamap.Bytes(ctx)
 		length := len(data)
 		if length == 0 {
@@ -70,8 +60,6 @@ func NewSendDataMid(next ADialer) ADialer {
 			conn.Close()
 			return ctx, nil, err
 		}
-		//time.Sleep(500 * time.Millisecond)
-		//fmt.Println("client write data done ", ctx.Value(ctxdatamap.CTXMapData))
 		return ctx, conn, nil
 	}
 }
