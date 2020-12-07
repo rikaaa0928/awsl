@@ -11,6 +11,8 @@ import (
 	"github.com/rikaaa0928/awsl/arouter"
 	"github.com/rikaaa0928/awsl/config"
 	"github.com/rikaaa0928/awsl/server"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/trace"
 )
 
 type Object func(context.Context, *sync.WaitGroup, string, config.Configs)
@@ -47,6 +49,11 @@ var DefaultObject Object = func(ctx context.Context, wg *sync.WaitGroup, tag str
 			continue
 		}
 		go func() {
+			tracer := otel.Tracer("gcp.bilibili.network/awsl")
+			var span trace.Span
+			ctx, span = tracer.Start(ctx, "object_go_routine")
+			defer span.End()
+
 			rc := aconn.CreateRealConn(ac)
 			rc.RegisterCloser(aconn.NewMetricsMid(ctx, tag, typ, rc.EndAddr().String()).MetricsClose)
 			outsConf, err := c.GetMap("outs")
