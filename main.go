@@ -40,7 +40,8 @@ func main() {
 			// For OpenCensus users:
 			// To see Profiler agent spans in APM backend,
 			// set EnableOCTelemetry to true
-			EnableOCTelemetry: true,
+			// EnableOCTelemetry: true,
+			MutexProfiling: true,
 		}
 
 		// Profiler initialization, best done as early as possible.
