@@ -66,6 +66,18 @@ func main() {
 		defer bsp.Shutdown(ctx)
 		tp := sdktrace.NewTracerProvider(sdktrace.WithSpanProcessor(bsp))
 		otel.SetTracerProvider(tp)
+	} else if len(os.Getenv("GOOGLE_APPLICATION_CREDENTIALS")) != 0 {
+		projectID := os.Getenv("GOOGLE_CLOUD_PROJECT")
+		exporter, err := texporter.NewExporter(texporter.WithProjectID(projectID))
+		if err != nil {
+			log.Fatalf("texporter.NewExporter: %v", err)
+		}
+		defer exporter.Shutdown(ctx) // flushes any pending spans
+
+		bsp := sdktrace.NewBatchSpanProcessor(exporter)
+		defer bsp.Shutdown(ctx)
+		tp := sdktrace.NewTracerProvider(sdktrace.WithSpanProcessor(bsp))
+		otel.SetTracerProvider(tp)
 	} else {
 		exporter, err := stdout.NewExporter([]stdout.Option{
 			stdout.WithPrettyPrint(),
