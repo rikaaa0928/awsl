@@ -43,7 +43,7 @@ var DefaultAHandler AHandler = func(ctx context.Context, sConn aconn.AConn, rout
 	w.Add(2)
 	// debug := strings.Contains(sConn.EndAddr().String(), "steam")
 	debug := false
-	go func() {
+	go func(ctx context.Context) {
 		var span trace.Span
 		ctx, span = tracer.Start(ctx, "go_io.CopyBuffer_c_s")
 		defer span.End()
@@ -58,8 +58,8 @@ var DefaultAHandler AHandler = func(ctx context.Context, sConn aconn.AConn, rout
 			io.CopyBuffer(rcConn, sConn, buf)
 		}
 		w.Done()
-	}()
-	go func() {
+	}(ctx)
+	go func(ctx context.Context) {
 		var span trace.Span
 		ctx, span = tracer.Start(ctx, "go_io.CopyBuffer_s_c")
 		defer span.End()
@@ -74,6 +74,6 @@ var DefaultAHandler AHandler = func(ctx context.Context, sConn aconn.AConn, rout
 			io.CopyBuffer(sConn, rcConn, buf)
 		}
 		w.Done()
-	}()
+	}(ctx)
 	w.Wait()
 }
