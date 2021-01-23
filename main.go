@@ -11,7 +11,6 @@ import (
 	"cloud.google.com/go/profiler"
 	texporter "github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/trace"
 	"go.opentelemetry.io/otel"
-	"go.opentelemetry.io/otel/exporters/stdout"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 
 	"github.com/rikaaa0928/awsl/config"
@@ -34,6 +33,10 @@ func main() {
 	gcp, err := conf.GetBool("gcp")
 	if err == nil {
 		global.GCP = gcp
+	}
+	bypassHttp, err := conf.GetBool("trace_bypass_http")
+	if err == nil {
+		global.TraceBypassHTTP = bypassHttp
 	}
 	if global.GCP {
 		cfg := profiler.Config{
@@ -66,6 +69,7 @@ func main() {
 		defer bsp.Shutdown(ctx)
 		tp := sdktrace.NewTracerProvider(sdktrace.WithSpanProcessor(bsp))
 		otel.SetTracerProvider(tp)
+		global.Tracing = true
 	} else if len(os.Getenv("GOOGLE_APPLICATION_CREDENTIALS")) != 0 {
 		projectID := os.Getenv("GOOGLE_CLOUD_PROJECT")
 		exporter, err := texporter.NewExporter(texporter.WithProjectID(projectID))
@@ -78,17 +82,9 @@ func main() {
 		defer bsp.Shutdown(ctx)
 		tp := sdktrace.NewTracerProvider(sdktrace.WithSpanProcessor(bsp))
 		otel.SetTracerProvider(tp)
+		global.Tracing = true
 	} else {
-		exporter, err := stdout.NewExporter([]stdout.Option{
-			stdout.WithPrettyPrint(),
-		}...)
-		if err != nil {
-			log.Fatalf("failed to initialize stdout export pipeline: %v", err)
-		}
-		bsp := sdktrace.NewBatchSpanProcessor(exporter)
-		defer bsp.Shutdown(ctx)
-		tp := sdktrace.NewTracerProvider(sdktrace.WithSpanProcessor(bsp))
-		otel.SetTracerProvider(tp)
+		global.Tracing = false
 	}
 
 	ins, err := conf.GetMap("ins")

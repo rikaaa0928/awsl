@@ -5,14 +5,16 @@ import (
 	"log"
 	"sync"
 
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/trace"
+
 	"github.com/rikaaa0928/awsl/aconn"
 	"github.com/rikaaa0928/awsl/adialer"
 	"github.com/rikaaa0928/awsl/alistener"
 	"github.com/rikaaa0928/awsl/arouter"
 	"github.com/rikaaa0928/awsl/config"
+	"github.com/rikaaa0928/awsl/global"
 	"github.com/rikaaa0928/awsl/server"
-	"go.opentelemetry.io/otel"
-	"go.opentelemetry.io/otel/trace"
 )
 
 type Object func(context.Context, *sync.WaitGroup, string, config.Configs)
@@ -48,12 +50,14 @@ var DefaultObject Object = func(ctx context.Context, wg *sync.WaitGroup, tag str
 			log.Println("accept error: ", err)
 			continue
 		}
+		ctx = context.WithValue(ctx, global.CTXInType, typ)
 		go func() {
-			tracer := otel.Tracer("awsl")
-			var span trace.Span
-			ctx, span = tracer.Start(ctx, "object_go_routine")
-			defer span.End()
-
+			if global.Tracing {
+				tracer := otel.Tracer("awsl")
+				var span trace.Span
+				ctx, span = tracer.Start(ctx, "object_go_routine")
+				defer span.End()
+			}
 			rc := aconn.CreateRealConn(ac)
 			rc.RegisterCloser(aconn.NewMetricsMid(ctx, tag, typ, rc.EndAddr().String()).MetricsClose)
 			outsConf, err := c.GetMap("outs")
