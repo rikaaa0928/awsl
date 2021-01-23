@@ -18,9 +18,18 @@ import (
 
 type AHandler func(context.Context, aconn.AConn, arouter.ARouter, adialer.DialerFactory)
 
+func inStringSlice(s string, slice []string) bool {
+	for _, v := range slice {
+		if s == v {
+			return true
+		}
+	}
+	return false
+}
+
 var DefaultAHandler AHandler = func(ctx context.Context, sConn aconn.AConn, route arouter.ARouter, getDialer adialer.DialerFactory) {
 	var tracer trace.Tracer
-	if global.Tracing && !(global.TraceBypassHTTP && ctx.Value(global.CTXInType).(string) == "http") {
+	if global.Tracing && !inStringSlice(ctx.Value(global.CTXInTag).(string), global.TraceBypassTags) {
 		tracer = otel.Tracer("awsl")
 		var span trace.Span
 		ctx, span = tracer.Start(ctx, "default_handler")

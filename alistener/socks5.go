@@ -15,7 +15,6 @@ import (
 	"time"
 
 	"github.com/rikaaa0928/awsl/aconn"
-	"github.com/rikaaa0928/awsl/global"
 	"github.com/rikaaa0928/awsl/utils"
 	"github.com/rikaaa0928/awsl/utils/superlib"
 )
@@ -23,7 +22,7 @@ import (
 // ErrUDP ErrUDP
 var ErrUDP = errors.New("udp error")
 
-func NewSocksAcceptMid(ctx context.Context, inTag string, conf map[string]interface{}) AcceptMid {
+func NewSocksAcceptMid(ctx context.Context, _ string, conf map[string]interface{}) AcceptMid {
 	ch := make(chan aconn.AConn, 2*runtime.NumCPU())
 	if udpI, ok := conf["udp"]; ok {
 		if udpB, ok := udpI.(bool); ok && udpB {
@@ -103,7 +102,7 @@ func NewSocksAcceptMid(ctx context.Context, inTag string, conf map[string]interf
 			}()
 			var conn aconn.AConn
 			var err error
-			ctx = context.WithValue(ctx, global.CTXInTag, inTag)
+			//ctx = context.WithValue(ctx, global.CTXInTag, inTag)
 			select {
 			case conn, ok := <-ch:
 				if !ok {

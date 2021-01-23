@@ -34,9 +34,9 @@ func main() {
 	if err == nil {
 		global.GCP = gcp
 	}
-	bypassHttp, err := conf.GetBool("trace_bypass_http")
+	bypass, err := conf.GetSlice("trace_bypass_tags")
 	if err == nil {
-		global.TraceBypassHTTP = bypassHttp
+		global.TraceBypassTags = bypass
 	}
 	if global.GCP {
 		cfg := profiler.Config{

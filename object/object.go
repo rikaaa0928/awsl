@@ -44,13 +44,14 @@ var DefaultObject Object = func(ctx context.Context, wg *sync.WaitGroup, tag str
 			l.Close()
 		}
 	}(&closed)
+	ctx = context.WithValue(ctx, global.CTXInTag, tag)
+	ctx = context.WithValue(ctx, global.CTXInType, typ)
 	for !closed {
 		ctx, ac, err := l.Accept(ctx)
 		if err != nil {
 			log.Println("accept error: ", err)
 			continue
 		}
-		ctx = context.WithValue(ctx, global.CTXInType, typ)
 		go func() {
 			if global.Tracing {
 				tracer := otel.Tracer("awsl")
