@@ -17,7 +17,7 @@ import (
 type AHandler func(context.Context, aconn.AConn, arouter.ARouter, adialer.DialerFactory)
 
 var DefaultAHandler AHandler = func(ctx context.Context, sConn aconn.AConn, route arouter.ARouter, getDialer adialer.DialerFactory) {
-	tracer := otel.Tracer("gcp.bilibili.network/awsl")
+	tracer := otel.Tracer("awsl")
 	var span trace.Span
 	ctx, span = tracer.Start(ctx, "default_handler")
 	defer span.End()

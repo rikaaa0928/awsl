@@ -49,7 +49,7 @@ var DefaultObject Object = func(ctx context.Context, wg *sync.WaitGroup, tag str
 			continue
 		}
 		go func() {
-			tracer := otel.Tracer("gcp.bilibili.network/awsl")
+			tracer := otel.Tracer("awsl")
 			var span trace.Span
 			ctx, span = tracer.Start(ctx, "object_go_routine")
 			defer span.End()
