@@ -38,7 +38,10 @@ func main() {
 	if err == nil {
 		global.TraceBypassTags = bypass
 	}
-	if global.GCP {
+	tracing, _ := conf.GetBool("tracing")
+	if !tracing {
+		global.Tracing = false
+	} else if global.GCP {
 		cfg := profiler.Config{
 			Service:        "awsl",
 			ServiceVersion: "1.0.0",
