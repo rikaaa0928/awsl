@@ -38,7 +38,10 @@ func main() {
 	if err == nil {
 		global.TraceBypassTags = bypass
 	}
-	tracing, _ := conf.GetBool("tracing")
+	tracing, err := conf.GetBool("tracing")
+	if err != nil {
+		tracing = true
+	}
 	if !tracing {
 		global.Tracing = false
 	} else if global.GCP {
