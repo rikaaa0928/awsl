@@ -11,12 +11,20 @@
             "port": 12344
         }
     },
-    "router": [
-        {
-            "tag": "default",
-            "type": "default"
+    "router": {
+        "data": {
+            "list1": "a.txt"
+        },
+        "default": {
+            "rules": [
+                {
+                    "data": "list1",
+                    "tag": "free"
+                }
+            ],
+            "tag": "default"
         }
-    ],
+    },
     "outs": {
         "default": {
             "type": "quic",
@@ -25,6 +33,9 @@
             "uri": "awsl/",
             "auth": "1234567890",
             "skipVerify": true
+        },
+        "free": {
+            "type": "free"
         }
     }
 }

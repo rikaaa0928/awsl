@@ -9,7 +9,6 @@ require (
 	github.com/marten-seemann/qtls-go1-15 v0.1.1 // indirect
 	github.com/prometheus/client_golang v1.8.0
 	go.opentelemetry.io/otel v0.14.0
-	go.opentelemetry.io/otel/exporters/stdout v0.14.0
 	go.opentelemetry.io/otel/sdk v0.14.0
 	golang.org/x/net v0.0.0-20201202161906-c7110b5ffcbb
 	golang.org/x/oauth2 v0.0.0-20201203001011-0b49973bad19 // indirect
