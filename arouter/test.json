@@ -1,0 +1,16 @@
+{
+  "router": {
+    "data": {
+      "list1": "a.txt"
+    },
+    "default": {
+      "rules": [
+        {
+          "data": "list1",
+          "tag": "free"
+        }
+      ],
+      "tag": "default"
+    }
+  }
+}

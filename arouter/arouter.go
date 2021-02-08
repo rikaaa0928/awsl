@@ -2,6 +2,7 @@ package arouter
 
 import (
 	"context"
+	"fmt"
 	"io/ioutil"
 	"log"
 	"net"
@@ -58,12 +59,17 @@ func NewRouter(conf config.Configs) ARouter {
 	if err != nil {
 		panic(err)
 	}
-	rules := rule{}
-	r := c["rules"].(map[string]interface{})
-	rules.list = datas[r["data"].(string)]
-	rules.tag = r["tag"].(string)
+	ruleL := make([]rule, 0)
+	rl := c["rules"].([]interface{})
+	for _, ri := range rl {
+		r := ri.(map[string]interface{})
+		rules := rule{}
+		rules.list = datas[r["data"].(string)]
+		rules.tag = r["tag"].(string)
+		ruleL = append(ruleL, rules)
+	}
 	routeMap["default"] = route{
-		rules: nil,
+		rules: ruleL,
 		tag:   c["tag"].(string),
 	}
 	return func(ctx context.Context, addr net.Addr) context.Context {
@@ -72,8 +78,39 @@ func NewRouter(conf config.Configs) ARouter {
 		if !ok {
 			c, err := conf.GetMap("router", inTag)
 			if err != nil {
-
+				router = routeMap["default"]
+			} else {
+				ruleL := make([]rule, 0)
+				rl := c["rules"].([]interface{})
+				for _, ri := range rl {
+					r := ri.(map[string]interface{})
+					rules := rule{}
+					rules.list = datas[r["data"].(string)]
+					rules.tag = r["tag"].(string)
+					ruleL = append(ruleL, rules)
+				}
+				routeMap[inTag] = route{
+					rules: ruleL,
+					tag:   c["tag"].(string),
+				}
+				router = routeMap[inTag]
 			}
 		}
+		host, _, err := net.SplitHostPort(addr.String())
+		if err != nil {
+			return context.WithValue(ctx, global.CTXOutTag, router.tag)
+		}
+		for _, l := range router.rules {
+			for _, r := range l.list {
+				if r.Include(host) {
+					ctx = context.WithValue(ctx, global.CTXOutTag, l.tag)
+					fmt.Println(l.tag)
+					return ctx
+				}
+			}
+		}
+		ctx = context.WithValue(ctx, global.CTXOutTag, router.tag)
+		fmt.Println(router.tag)
+		return ctx
 	}
 }
