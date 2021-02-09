@@ -31,7 +31,7 @@ type route struct {
 
 func NewRouter(conf config.Configs) ARouter {
 	datas := make(map[string][]rulelist.Rule)
-	data, err := conf.GetStrMap("data")
+	data, err := conf.GetStrMap("router", "data")
 	if err != nil {
 		data = make(map[string]string)
 	}
