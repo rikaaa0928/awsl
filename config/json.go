@@ -54,6 +54,7 @@ func (c *JsonConfig) Get(path ...string) (interface{}, error) {
 			return nil, fmt.Errorf("Wrong path: %v", path)
 		}
 		if i != len(path)-1 {
+			m = make(map[string]json.RawMessage)
 			err := json.Unmarshal(v, &m)
 			if err != nil {
 				nextKey := path[i+1]

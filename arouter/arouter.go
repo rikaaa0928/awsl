@@ -8,6 +8,7 @@ import (
 	"net"
 	"os"
 	"strings"
+	"sync"
 
 	"github.com/rikaaa0928/awsl/config"
 	"github.com/rikaaa0928/awsl/global"
@@ -55,12 +56,17 @@ func NewRouter(conf config.Configs) ARouter {
 		f.Close()
 	}
 	routeMap := make(map[string]route)
+	lock := sync.RWMutex{}
 	c, err := conf.GetMap("router", "default")
 	if err != nil {
 		panic(err)
 	}
 	ruleL := make([]rule, 0)
-	rl := c["rules"].([]interface{})
+	rli, ok := c["rules"]
+	if !ok {
+		rli = make([]interface{}, 0)
+	}
+	rl := rli.([]interface{})
 	for _, ri := range rl {
 		r := ri.(map[string]interface{})
 		rules := rule{}
@@ -68,20 +74,30 @@ func NewRouter(conf config.Configs) ARouter {
 		rules.tag = r["tag"].(string)
 		ruleL = append(ruleL, rules)
 	}
+	lock.Lock()
 	routeMap["default"] = route{
 		rules: ruleL,
 		tag:   c["tag"].(string),
 	}
+	lock.Unlock()
 	return func(ctx context.Context, addr net.Addr) context.Context {
 		inTag := ctx.Value(global.CTXInTag).(string)
+		lock.RLock()
 		router, ok := routeMap[inTag]
+		lock.RUnlock()
 		if !ok {
 			c, err := conf.GetMap("router", inTag)
-			if err != nil {
+			if err != nil || c == nil {
+				lock.RLock()
 				router = routeMap["default"]
+				lock.RUnlock()
 			} else {
 				ruleL := make([]rule, 0)
-				rl := c["rules"].([]interface{})
+				rli, ok := c["rules"]
+				if !ok {
+					rli = make([]interface{}, 0)
+				}
+				rl := rli.([]interface{})
 				for _, ri := range rl {
 					r := ri.(map[string]interface{})
 					rules := rule{}
@@ -89,11 +105,13 @@ func NewRouter(conf config.Configs) ARouter {
 					rules.tag = r["tag"].(string)
 					ruleL = append(ruleL, rules)
 				}
+				lock.Lock()
 				routeMap[inTag] = route{
 					rules: ruleL,
 					tag:   c["tag"].(string),
 				}
 				router = routeMap[inTag]
+				lock.Unlock()
 			}
 		}
 		host, _, err := net.SplitHostPort(addr.String())
@@ -104,13 +122,13 @@ func NewRouter(conf config.Configs) ARouter {
 			for _, r := range l.list {
 				if r.Include(host) {
 					ctx = context.WithValue(ctx, global.CTXOutTag, l.tag)
-					fmt.Println(l.tag)
+					fmt.Println(addr.String(), l.tag)
 					return ctx
 				}
 			}
 		}
 		ctx = context.WithValue(ctx, global.CTXOutTag, router.tag)
-		fmt.Println(router.tag)
+		fmt.Println(addr.String(), router.tag)
 		return ctx
 	}
 }

@@ -66,7 +66,7 @@ var DefaultObject Object = func(ctx context.Context, wg *sync.WaitGroup, tag str
 				log.Println("c.GetMap('outs'), err: ", err)
 				return
 			}
-			handle(ctx, rc, arouter.NopRouter, adialer.NewFactory(outsConf))
+			handle(ctx, rc, arouter.NewRouter(c), adialer.NewFactory(outsConf))
 		}()
 	}
 	wg.Done()
