@@ -2,7 +2,6 @@ package arouter
 
 import (
 	"context"
-	"fmt"
 	"io/ioutil"
 	"log"
 	"net"
@@ -122,13 +121,13 @@ func NewRouter(conf config.Configs) ARouter {
 			for _, r := range l.list {
 				if r.Include(host) {
 					ctx = context.WithValue(ctx, global.CTXOutTag, l.tag)
-					fmt.Println(addr.String(), l.tag)
+					//fmt.Println(addr.String(), l.tag)
 					return ctx
 				}
 			}
 		}
 		ctx = context.WithValue(ctx, global.CTXOutTag, router.tag)
-		fmt.Println(addr.String(), router.tag)
+		//fmt.Println(addr.String(), router.tag)
 		return ctx
 	}
 }
