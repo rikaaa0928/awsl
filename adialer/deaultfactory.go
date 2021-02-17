@@ -27,7 +27,7 @@ func NewFactory(conf map[string]interface{}) DialerFactory {
 		case "free":
 			d = Free
 		case "awsl":
-			d = NewAWSL(tagConf)
+			d = NewAWSL(outTag.(string), tagConf)
 		case "quic":
 			d = NewQUIC(tagConf)
 		default:
