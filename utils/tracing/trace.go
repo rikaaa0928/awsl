@@ -7,10 +7,11 @@ import (
 
 	"cloud.google.com/go/profiler"
 	texporter "github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/trace"
-	"github.com/rikaaa0928/awsl/config"
-	"github.com/rikaaa0928/awsl/global"
 	"go.opentelemetry.io/otel"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
+
+	"github.com/rikaaa0928/awsl/config"
+	"github.com/rikaaa0928/awsl/global"
 )
 
 func Start(ctx context.Context, conf config.Configs) {
@@ -76,4 +77,5 @@ func Start(ctx context.Context, conf config.Configs) {
 	} else {
 		global.Tracing = false
 	}
+	<-ctx.Done()
 }

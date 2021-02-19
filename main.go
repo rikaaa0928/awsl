@@ -25,7 +25,7 @@ func main() {
 		panic(err)
 	}
 
-	tracing.Start(ctx, conf)
+	go tracing.Start(ctx, conf)
 
 	ins, err := conf.GetMap("ins")
 	if err != nil {
