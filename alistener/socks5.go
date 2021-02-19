@@ -10,7 +10,6 @@ import (
 	"log"
 	"net"
 	"strconv"
-	"sync"
 	"time"
 
 	"github.com/rikaaa0928/awsl/aconn"
@@ -299,78 +298,6 @@ func parseAddress(address string) (a byte, addr []byte, port []byte, err error) 
 	port = make([]byte, 2)
 	binary.BigEndian.PutUint16(port, uint16(i))
 	return
-}
-
-type udpConnWrapper struct {
-	*net.UDPConn
-	srcAddr   *net.UDPAddr
-	endAddr   net.Addr
-	readChan  chan []byte
-	closeOnce sync.Once
-}
-
-func (c *udpConnWrapper) Write(b []byte) (n int, err error) {
-	// uMsg := udplib.UDPMSG{}
-	// err = json.Unmarshal(b, &uMsg)
-	// if err != nil {
-	// 	log.Println("udp unmarshal error", err)
-	// 	return
-	// }
-	a, addr, port, err := parseAddress(c.endAddr.String())
-	if err != nil {
-		log.Println(err)
-		return
-	}
-	data2Write := newDatagram(a, addr, port, b)
-	n, err = c.UDPConn.WriteToUDP(data2Write.Bytes(), c.srcAddr)
-	if err == nil {
-		log.Println("udp write to ", c.srcAddr, n, string(b))
-	}
-	return
-}
-
-func (c *udpConnWrapper) Read(b []byte) (n int, err error) {
-	t := time.NewTimer(time.Minute * 10)
-	select {
-	case <-t.C:
-		defer func() {
-			err := recover()
-			if err != nil {
-				log.Println("unexpected, udpConnWrapper.Read() close readChan twice with closeOnce; err: ", err)
-			}
-		}()
-		c.closeOnce.Do(func() {
-			close(c.readChan)
-		})
-		return 0, errors.New("time out")
-	case d, ok := <-c.readChan:
-		if !ok {
-			return 0, errors.New("udp readChan closed")
-		}
-		n = copy(b, d)
-		return
-	}
-}
-
-func (c *udpConnWrapper) Close() error {
-	defer func() {
-		err := recover()
-		if err != nil {
-			log.Println("unexpected, udpConnWrapper.Close() close readChan twice with closeOnce; err: ", err)
-		}
-	}()
-	c.closeOnce.Do(func() {
-		close(c.readChan)
-	})
-	return nil
-}
-
-func (c *udpConnWrapper) EndAddr() net.Addr {
-	return c.endAddr
-}
-
-func (c *udpConnWrapper) SetEndAddr(addr net.Addr) {
-	c.endAddr = addr
 }
 
 type datagram struct {
