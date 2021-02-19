@@ -20,7 +20,7 @@ import (
 type Object func(context.Context, *sync.WaitGroup, string, config.Configs)
 
 var DefaultObject Object = func(ctx context.Context, wg *sync.WaitGroup, tag string, c config.Configs) {
-	closed := false
+	//closed := false
 	typ, err := c.GetString("ins", tag, "type")
 	if err != nil {
 		panic(err)
@@ -37,16 +37,23 @@ var DefaultObject Object = func(ctx context.Context, wg *sync.WaitGroup, tag str
 	handle := s.Handler()
 	l := alistener.NewRealListener(s.Listen())
 	alistener.DefaultAcceptMids(ctx, l, typ, tag, conf)
-	go func(closed *bool) {
-		select {
-		case <-ctx.Done():
-			*closed = true
-			l.Close()
-		}
-	}(&closed)
+	//go func(closed *bool) {
+	//	select {
+	//	case <-ctx.Done():
+	//		*closed = true
+	//		l.Close()
+	//	}
+	//}(&closed)
 	ctx = context.WithValue(ctx, global.CTXInTag, tag)
 	ctx = context.WithValue(ctx, global.CTXInType, typ)
-	for !closed {
+	for /*!closed*/ {
+		select {
+		case <-ctx.Done():
+			l.Close()
+			break
+		default:
+
+		}
 		ctx, ac, err := l.Accept(ctx)
 		if err != nil {
 			log.Println("accept error: ", err)

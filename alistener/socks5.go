@@ -9,116 +9,105 @@ import (
 	"io/ioutil"
 	"log"
 	"net"
-	"runtime"
 	"strconv"
 	"sync"
 	"time"
 
 	"github.com/rikaaa0928/awsl/aconn"
 	"github.com/rikaaa0928/awsl/utils"
-	"github.com/rikaaa0928/awsl/utils/superlib"
+	"github.com/rikaaa0928/awsl/utils/udplib"
 )
 
 // ErrUDP ErrUDP
 var ErrUDP = errors.New("udp error")
 
-func NewSocksAcceptMid(ctx context.Context, _ string, conf map[string]interface{}) AcceptMid {
-	ch := make(chan aconn.AConn, 2*runtime.NumCPU())
+func NewSocksAcceptMid(ctx context.Context, conf map[string]interface{}) AcceptMid {
+	udpB := true
 	if udpI, ok := conf["udp"]; ok {
-		if udpB, ok := udpI.(bool); ok && udpB {
+		udpB, ok = udpI.(bool)
+	}
+	if udpB {
+		go func() {
+			udpAddr, err := net.ResolveUDPAddr("udp", net.JoinHostPort(conf["host"].(string), strconv.Itoa(int(conf["port"].(float64)))))
+			if err != nil {
+				panic(err)
+			}
+			l, err := net.ListenUDP("udp", udpAddr)
+			if err != nil {
+				panic(err)
+			}
 			go func() {
-				closed := false
-				udpAddr, err := net.ResolveUDPAddr("udp", net.JoinHostPort(conf["host"].(string), strconv.Itoa(int(conf["port"].(float64)))))
-				if err != nil {
-					panic(err)
-				}
-				l, err := net.ListenUDP("udp", udpAddr)
-				if err != nil {
-					panic(err)
-				}
-				log.Println("udp listen ", udpAddr)
-				go func(closed *bool) {
-					select {
-					case <-ctx.Done():
-						*closed = true
-						l.Close()
-						close(ch)
-					}
-				}(&closed)
-				buf := utils.GetMem(65536)
-				defer utils.PutMem(buf)
-				for !closed {
-					n, srcAddr, err := l.ReadFromUDP(buf)
-					if err != nil {
-						log.Println("ReadFromUDP error: ", err)
-						continue
-					}
-					go func(addr *net.UDPAddr, b []byte) {
-						defer func() {
-							recover()
-						}()
-						u, err := superlib.NewUDPMSG(b, srcAddr)
-						if err != nil {
-							log.Println(err)
-							return
-						}
-						endAddr, err := net.ResolveUDPAddr("udp", u.DstStr)
-						if err != nil {
-							log.Println(err)
-							return
-						}
-						conn := &udpConnWrapper{UDPConn: l, srcAddr: srcAddr, endAddr: endAddr, readChan: make(chan []byte, 1)}
-						go func() {
-							defer func() {
-								recover()
-							}()
-							t := time.NewTimer(time.Minute * 10)
-							select {
-							case <-t.C:
-								conn.Close()
-							case conn.readChan <- u.Data:
-							}
-						}()
-						ch <- conn
-					}(srcAddr, buf[0:n])
-				}
+				<-ctx.Done()
+				l.Close()
 			}()
-		}
+			buf := utils.GetMem(65536)
+			defer utils.PutMem(buf)
+		main:
+			for {
+				select {
+				case <-ctx.Done():
+					l.Close()
+					break main
+				default:
+
+				}
+				n, srcAddr, err := l.ReadFromUDP(buf)
+				if err != nil {
+					log.Println("ReadFromUDP error: ", err)
+					continue
+				}
+				go func(addr *net.UDPAddr, b []byte) {
+					u, err := udplib.NewUDPMSG(b, srcAddr)
+					if err != nil {
+						log.Println(err)
+						return
+					}
+					endAddr, err := net.ResolveUDPAddr("udp", u.DstStr)
+					if err != nil {
+						log.Println(err)
+						return
+					}
+					conn, err := net.DialUDP("udp", nil, endAddr)
+					if err != nil {
+						log.Println(err)
+						return
+					}
+					buf2 := utils.GetMem(65536)
+					defer utils.PutMem(buf2)
+
+					_, err = conn.Write(u.Data)
+					if err != nil {
+						log.Println(err)
+						return
+					}
+					err = conn.SetReadDeadline(time.Now().Add(time.Hour))
+					if err != nil {
+						log.Println(err)
+						return
+					}
+					n2, err := conn.Read(buf2)
+					if err != nil {
+						log.Println(err)
+						return
+					}
+					a, resAddr, port, err := parseAddress(endAddr.String())
+					if err != nil {
+						log.Println(err)
+						return
+					}
+					data2Write := newDatagram(a, resAddr, port, buf2[:n2])
+					_, err = l.WriteTo(data2Write.Bytes(), srcAddr)
+					if err != nil {
+						log.Println(err)
+						return
+					}
+				}(srcAddr, buf[:n])
+			}
+		}()
 	}
 	return func(next Acceptor) Acceptor {
 		return func(ctx context.Context) (context.Context, aconn.AConn, error) {
-			tch := make(chan struct {
-				ctx  context.Context
-				conn aconn.AConn
-				err  error
-			}, 2*runtime.NumCPU())
-			go func() {
-				ctx, conn, err := next(ctx)
-				tch <- struct {
-					ctx  context.Context
-					conn aconn.AConn
-					err  error
-				}{ctx, conn, err}
-			}()
-			var conn aconn.AConn
-			var err error
-			//ctx = context.WithValue(ctx, global.CTXInTag, inTag)
-			select {
-			case conn, ok := <-ch:
-				if !ok {
-					log.Println("udp chan closed")
-					return ctx, nil, ErrUDP
-				}
-				// ctx = context.WithValue(ctx, global.CTXSuperType, msg.T)
-				// ctx = context.WithValue(ctx, global.CTXSuperData, msg.MSG)
-				// //ctx = superlib.SetID(ctx, msg.ID)
-				return ctx, conn, nil
-			case tm := <-tch:
-				ctx = tm.ctx
-				conn = tm.conn
-				err = tm.err
-			}
-			//ctx, conn, err := next(ctx)
+			ctx, conn, err := next(ctx)
 			if err != nil {
 				return ctx, nil, err
 			}
@@ -321,7 +310,7 @@ type udpConnWrapper struct {
 }
 
 func (c *udpConnWrapper) Write(b []byte) (n int, err error) {
-	// uMsg := superlib.UDPMSG{}
+	// uMsg := udplib.UDPMSG{}
 	// err = json.Unmarshal(b, &uMsg)
 	// if err != nil {
 	// 	log.Println("udp unmarshal error", err)

@@ -40,28 +40,6 @@ var Free = func(ctx context.Context, addr net.Addr) (context.Context, aconn.ACon
 	return ctx, ac, err
 }
 
-func NewFreeUDP(src, dst string) ADialer {
-	return func(ctx context.Context, _ net.Addr) (context.Context, aconn.AConn, error) {
-		uDst, err := net.ResolveUDPAddr("udp", dst)
-		if err != nil {
-			return ctx, nil, err
-		}
-		//uSrc, err := net.ResolveUDPAddr("udp", src)
-		//if err != nil {
-		//	return ctx, nil, err
-		//}
-		c, err := net.DialUDP("udp", nil, uDst)
-		if err != nil {
-			return ctx, nil, err
-		}
-		lAddr := c.LocalAddr()
-		luAddr, _ := net.ResolveUDPAddr(lAddr.Network(), lAddr.String())
-		ac := aconn.NewAConn(&udpConnWrapper{UDPConn: c, lAddr: luAddr, toAddr: uDst})
-		ac.SetEndAddr(uDst)
-		return ctx, ac, err
-	}
-}
-
 type udpConnWrapper struct {
 	// sync.Mutex
 	*net.UDPConn
