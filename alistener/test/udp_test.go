@@ -21,7 +21,7 @@ func TestUDP(t *testing.T) {
 	wg.Add(1)
 	go func(ctx context.Context) {
 		l := alistener.NewRealListener(server.NewBaseTcp("127.0.0.1", 4888).Listen())
-		l.RegisterAcceptor(alistener.NewSocksAcceptMid(ctx, map[string]interface{}{"host": "127.0.0.1", "port": 4888.0}))
+		l.RegisterAcceptor(alistener.NewSocksAcceptMid(ctx, "tag", map[string]interface{}{"host": "127.0.0.1", "port": 4888.0}))
 		go func() {
 			<-ctx.Done()
 			l.Close()

@@ -11,7 +11,6 @@ import (
 	"github.com/rikaaa0928/awsl/global"
 	"github.com/rikaaa0928/awsl/object"
 	"github.com/rikaaa0928/awsl/utils/metrics"
-	"github.com/rikaaa0928/awsl/utils/tracing"
 )
 
 func main() {
@@ -24,8 +23,6 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-
-	go tracing.Start(ctx, conf)
 
 	ins, err := conf.GetMap("ins")
 	if err != nil {

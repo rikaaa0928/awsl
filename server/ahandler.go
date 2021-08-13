@@ -6,13 +6,9 @@ import (
 	"log"
 	"sync"
 
-	"go.opentelemetry.io/otel"
-	"go.opentelemetry.io/otel/trace"
-
 	"github.com/rikaaa0928/awsl/aconn"
 	"github.com/rikaaa0928/awsl/adialer"
 	"github.com/rikaaa0928/awsl/arouter"
-	"github.com/rikaaa0928/awsl/global"
 	"github.com/rikaaa0928/awsl/utils"
 )
 
@@ -28,13 +24,6 @@ func inStringSlice(s string, slice []string) bool {
 }
 
 var DefaultAHandler AHandler = func(ctx context.Context, sConn aconn.AConn, route arouter.ARouter, getDialer adialer.DialerFactory) {
-	var tracer trace.Tracer
-	if global.Tracing && !inStringSlice(ctx.Value(global.CTXInTag).(string), global.TraceBypassTags) {
-		tracer = otel.Tracer("awsl")
-		var span trace.Span
-		ctx, span = tracer.Start(ctx, "default_handler")
-		defer span.End()
-	}
 	defer sConn.Close()
 	ctx = route(ctx, sConn.EndAddr())
 	dial := getDialer(ctx)
@@ -57,10 +46,6 @@ var DefaultAHandler AHandler = func(ctx context.Context, sConn aconn.AConn, rout
 	// debug := strings.Contains(sConn.EndAddr().String(), "steam")
 	debug := false
 	go func(ctx context.Context) {
-		if tracer != nil {
-			_, span := tracer.Start(ctx, "go_io.CopyBuffer_c_s")
-			defer span.End()
-		}
 		defer sConn.Close()
 		defer rcConn.Close()
 		buf := utils.GetMem(65536)
@@ -74,10 +59,6 @@ var DefaultAHandler AHandler = func(ctx context.Context, sConn aconn.AConn, rout
 		w.Done()
 	}(ctx)
 	go func(ctx context.Context) {
-		if tracer != nil {
-			_, span := tracer.Start(ctx, "go_io.CopyBuffer_s_c")
-			defer span.End()
-		}
 		defer sConn.Close()
 		defer rcConn.Close()
 		buf := utils.GetMem(65536)

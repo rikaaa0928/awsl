@@ -12,15 +12,29 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/prometheus/client_golang/prometheus"
 	"github.com/rikaaa0928/awsl/aconn"
+	"github.com/rikaaa0928/awsl/global"
 	"github.com/rikaaa0928/awsl/utils"
 	"github.com/rikaaa0928/awsl/utils/udplib"
 )
 
+var realTimeUDPNum *prometheus.GaugeVec
+
+func init() {
+	realTimeUDPNum = prometheus.NewGaugeVec(prometheus.GaugeOpts{
+		Namespace: "awsl",
+		Subsystem: "socks5_listener",
+		Name:      "realtime_udp_connection_num",
+		Help:      "Number of realtime udp connection.",
+	}, []string{"tag", "end_addr"})
+	prometheus.MustRegister(realTimeUDPNum)
+}
+
 // ErrUDP ErrUDP
 var ErrUDP = errors.New("udp error")
 
-func NewSocksAcceptMid(ctx context.Context, conf map[string]interface{}) AcceptMid {
+func NewSocksAcceptMid(ctx context.Context, tag string, conf map[string]interface{}) AcceptMid {
 	udpB := true
 	if udpI, ok := conf["udp"]; ok {
 		udpB, ok = udpI.(bool)
@@ -56,7 +70,7 @@ func NewSocksAcceptMid(ctx context.Context, conf map[string]interface{}) AcceptM
 					continue
 				}
 				go func(addr *net.UDPAddr, b []byte) {
-					u, err := udplib.NewUDPMSG(b, srcAddr)
+					u, err := udplib.NewUDPMSG(b, addr)
 					if err != nil {
 						log.Println(err)
 						return
@@ -71,6 +85,14 @@ func NewSocksAcceptMid(ctx context.Context, conf map[string]interface{}) AcceptM
 						log.Println(err)
 						return
 					}
+					if global.MetricsPort > 0 {
+						realTimeUDPNum.With(prometheus.Labels{"tag": tag, "end_addr": endAddr.String()}).Inc()
+					}
+					defer func() {
+						if global.MetricsPort > 0 {
+							realTimeUDPNum.With(prometheus.Labels{"tag": tag, "end_addr": endAddr.String()}).Dec()
+						}
+					}()
 					buf2 := utils.GetMem(65536)
 					defer utils.PutMem(buf2)
 
@@ -95,7 +117,7 @@ func NewSocksAcceptMid(ctx context.Context, conf map[string]interface{}) AcceptM
 						return
 					}
 					data2Write := newDatagram(a, resAddr, port, buf2[:n2])
-					_, err = l.WriteTo(data2Write.Bytes(), srcAddr)
+					_, err = l.WriteTo(data2Write.Bytes(), addr)
 					if err != nil {
 						log.Println(err)
 						return
