@@ -34,7 +34,7 @@ func init() {
 	UDPFlow = prometheus.NewCounterVec(prometheus.CounterOpts{
 		Namespace: "awsl",
 		Subsystem: "socks5_listener",
-		Name:      "sockst_udp_flow",
+		Name:      "udp_flow",
 		Help:      "Number of realtime udp connection.",
 	}, []string{"tag", "end_addr", "direction"})
 	prometheus.MustRegister(UDPFlow)
