@@ -21,6 +21,7 @@ import (
 )
 
 var realTimeUDPNum *prometheus.GaugeVec
+var UDPFlow *prometheus.CounterVec
 
 func init() {
 	realTimeUDPNum = prometheus.NewGaugeVec(prometheus.GaugeOpts{
@@ -30,6 +31,13 @@ func init() {
 		Help:      "Number of realtime udp connection.",
 	}, []string{"tag", "end_addr"})
 	prometheus.MustRegister(realTimeUDPNum)
+	UDPFlow = prometheus.NewCounterVec(prometheus.CounterOpts{
+		Namespace: "awsl",
+		Subsystem: "socks5_listener",
+		Name:      "sockst_udp_flow",
+		Help:      "Number of realtime udp connection.",
+	}, []string{"tag", "end_addr", "direction"})
+	prometheus.MustRegister(UDPFlow)
 }
 
 // ErrUDP ErrUDP
@@ -109,10 +117,14 @@ func NewSocksAcceptMid(ctx context.Context, tag string, conf map[string]interfac
 					buf2 := utils.GetMem(65536)
 					defer utils.PutMem(buf2)
 
-					_, err = conn.Write(u.Data)
+					var n int
+					n, err = conn.Write(u.Data)
 					if err != nil {
 						log.Println(err)
 						return
+					}
+					if global.MetricsPort > 0 {
+						UDPFlow.With(prometheus.Labels{"tag": tag, "end_addr": endAddr.String(), "direction": "out"}).Add(float64(n))
 					}
 					for {
 						err = conn.SetReadDeadline(time.Now().Add(time.Duration(udpTimeout * float64(time.Minute))))
@@ -128,6 +140,9 @@ func NewSocksAcceptMid(ctx context.Context, tag string, conf map[string]interfac
 							log.Println(err)
 							return
 						}
+						if global.MetricsPort > 0 {
+							UDPFlow.With(prometheus.Labels{"tag": tag, "end_addr": endAddr.String(), "direction": "in"}).Add(float64(n2))
+						}
 						a, resAddr, port, err := parseAddress(endAddr.String())
 						if err != nil {
 							log.Println(err)
@@ -135,13 +150,16 @@ func NewSocksAcceptMid(ctx context.Context, tag string, conf map[string]interfac
 						}
 						data2Write := newDatagram(a, resAddr, port, buf2[:n2])
 						err = conn.SetWriteDeadline(time.Now().Add(time.Duration(udpTimeout * float64(time.Minute))))
-						_, err = l.WriteTo(data2Write.Bytes(), addr)
+						n, err = l.WriteTo(data2Write.Bytes(), addr)
 						if err != nil {
 							if os.IsTimeout(err) {
 								break
 							}
 							log.Println(err)
 							return
+						}
+						if global.MetricsPort > 0 {
+							UDPFlow.With(prometheus.Labels{"tag": tag, "end_addr": endAddr.String(), "direction": "return"}).Add(float64(n))
 						}
 					}
 				}(srcAddr, buf[:n])
