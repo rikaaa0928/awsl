@@ -9,6 +9,7 @@ import (
 	"io/ioutil"
 	"log"
 	"net"
+	"os"
 	"strconv"
 	"time"
 
@@ -37,9 +38,21 @@ var ErrUDP = errors.New("udp error")
 func NewSocksAcceptMid(ctx context.Context, tag string, conf map[string]interface{}) AcceptMid {
 	udpB := true
 	if udpI, ok := conf["udp"]; ok {
-		udpB, ok = udpI.(bool)
+		udpB, _ = udpI.(bool)
 	}
 	if udpB {
+		udpTimeout := 10.0
+		if udpTImeoutI, ok := conf["udp_timeout"]; ok {
+			if udpTimeoutInt, ok := udpTImeoutI.(int); ok {
+				udpTimeout = float64(udpTimeoutInt)
+			}
+			if udpTimeoutInt, ok := udpTImeoutI.(int64); ok {
+				udpTimeout = float64(udpTimeoutInt)
+			}
+			if udpTimeoutInt, ok := udpTImeoutI.(float64); ok {
+				udpTimeout = udpTimeoutInt
+			}
+		}
 		go func() {
 			udpAddr, err := net.ResolveUDPAddr("udp", net.JoinHostPort(conf["host"].(string), strconv.Itoa(int(conf["port"].(float64)))))
 			if err != nil {
@@ -101,26 +114,35 @@ func NewSocksAcceptMid(ctx context.Context, tag string, conf map[string]interfac
 						log.Println(err)
 						return
 					}
-					err = conn.SetReadDeadline(time.Now().Add(time.Hour))
-					if err != nil {
-						log.Println(err)
-						return
-					}
-					n2, err := conn.Read(buf2)
-					if err != nil {
-						log.Println(err)
-						return
-					}
-					a, resAddr, port, err := parseAddress(endAddr.String())
-					if err != nil {
-						log.Println(err)
-						return
-					}
-					data2Write := newDatagram(a, resAddr, port, buf2[:n2])
-					_, err = l.WriteTo(data2Write.Bytes(), addr)
-					if err != nil {
-						log.Println(err)
-						return
+					for {
+						err = conn.SetReadDeadline(time.Now().Add(time.Duration(udpTimeout * float64(time.Minute))))
+						if err != nil {
+							log.Println(err)
+							return
+						}
+						n2, err := conn.Read(buf2)
+						if err != nil {
+							if os.IsTimeout(err) {
+								break
+							}
+							log.Println(err)
+							return
+						}
+						a, resAddr, port, err := parseAddress(endAddr.String())
+						if err != nil {
+							log.Println(err)
+							return
+						}
+						data2Write := newDatagram(a, resAddr, port, buf2[:n2])
+						err = conn.SetWriteDeadline(time.Now().Add(time.Duration(udpTimeout * float64(time.Minute))))
+						_, err = l.WriteTo(data2Write.Bytes(), addr)
+						if err != nil {
+							if os.IsTimeout(err) {
+								break
+							}
+							log.Println(err)
+							return
+						}
 					}
 				}(srcAddr, buf[:n])
 			}
