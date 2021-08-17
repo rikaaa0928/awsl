@@ -3,9 +3,14 @@ package udplib
 import (
 	"bytes"
 	"encoding/binary"
+	"errors"
 	"fmt"
 	"net"
 	"strconv"
+	"sync"
+
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/rikaaa0928/awsl/global"
 )
 
 type UDPMSG struct {
@@ -70,4 +75,54 @@ func NewUDPMSG(bb []byte, srcAddr net.Addr) (m UDPMSG, err error) {
 	m.DstStr = net.JoinHostPort(s, p)
 	m.SrcStr = srcAddr.String()
 	return
+}
+
+var m map[string]*UDPConn
+var lock sync.Mutex
+var UDPDial *prometheus.GaugeVec
+var InMap = errors.New("in map")
+
+func init() {
+	m = make(map[string]*UDPConn)
+	UDPDial = prometheus.NewGaugeVec(prometheus.GaugeOpts{
+		Namespace: "awsl",
+		Subsystem: "udplib",
+		Name:      "realtime_udp_dial",
+		Help:      "Number of realtime udp dial.",
+	}, []string{"key"})
+	prometheus.MustRegister(UDPDial)
+}
+
+type UDPConn struct {
+	*net.UDPConn
+	key string
+}
+
+func DialUDP(network string, laddr, raddr *net.UDPAddr) (*UDPConn, error) {
+	lock.Lock()
+	defer lock.Unlock()
+	key := laddr.String() + "-" + raddr.String()
+	if mu, ok := m[key]; ok {
+		return mu, InMap
+	}
+	u, err := net.DialUDP(network, nil, raddr)
+	ru := &UDPConn{UDPConn: u, key: key}
+	if err != nil {
+		return ru, err
+	}
+	if global.MetricsPort > 0 {
+		UDPDial.With(prometheus.Labels{"key": key}).Inc()
+	}
+	m[key] = ru
+	return ru, err
+}
+
+func (c *UDPConn) Close() error {
+	lock.Lock()
+	defer lock.Unlock()
+	if global.MetricsPort > 0 {
+		UDPDial.With(prometheus.Labels{"key": c.key}).Dec()
+	}
+	delete(m, c.key)
+	return c.UDPConn.Close()
 }

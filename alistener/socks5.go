@@ -101,9 +101,9 @@ func NewSocksAcceptMid(ctx context.Context, tag string, conf map[string]interfac
 						log.Println(err)
 						return
 					}
-					conn, err := net.DialUDP("udp", nil, endAddr)
-					if err != nil {
-						log.Println(err)
+					conn, derr := udplib.DialUDP("udp", addr, endAddr)
+					if derr != nil && !errors.Is(derr, udplib.InMap) {
+						log.Println(derr)
 						return
 					}
 					if global.MetricsPort > 0 {
@@ -117,8 +117,7 @@ func NewSocksAcceptMid(ctx context.Context, tag string, conf map[string]interfac
 					buf2 := utils.GetMem(65536)
 					defer utils.PutMem(buf2)
 
-					var n int
-					n, err = conn.Write(u.Data)
+					n, err := conn.Write(u.Data)
 					if err != nil {
 						log.Println(err)
 						return
@@ -126,6 +125,12 @@ func NewSocksAcceptMid(ctx context.Context, tag string, conf map[string]interfac
 					if global.MetricsPort > 0 {
 						UDPFlow.With(prometheus.Labels{"tag": tag, "end_addr": endAddr.String(), "direction": "out"}).Add(float64(n))
 					}
+					if derr != nil {
+						return
+					}
+					defer func() {
+						conn.Close()
+					}()
 					for {
 						err = conn.SetReadDeadline(time.Now().Add(time.Duration(udpTimeout * float64(time.Minute))))
 						if err != nil {
