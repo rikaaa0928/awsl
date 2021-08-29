@@ -16,7 +16,7 @@ func NewServer(typ string, conf map[string]interface{}) (AServer, error) {
 	switch typ {
 	case "socks", "socks5", "socks4", "tcp":
 		return NewBaseTcp(conf["host"].(string), int(conf["port"].(float64))), nil
-	case "awsl", "http":
+	case "awsl", "http", "pprof":
 		uri, ok := conf["uri"]
 		if !ok {
 			uri = ""

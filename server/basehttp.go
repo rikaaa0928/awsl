@@ -6,6 +6,7 @@ import (
 	"log"
 	"net"
 	"net/http"
+	"net/http/pprof"
 	"runtime"
 	"strconv"
 
@@ -14,13 +15,13 @@ import (
 )
 
 type HTTP struct {
-	host          string
-	port          int
-	uri           string
-	cert          string
-	key           string
-	l             serveListener
-	handleConnect bool
+	host   string
+	port   int
+	uri    string
+	cert   string
+	key    string
+	l      serveListener
+	routed bool
 }
 
 func NewHTTPServer(typ, host, uri, cert, key string, port int) *HTTP {
@@ -44,7 +45,22 @@ func NewHTTPServer(typ, host, uri, cert, key string, port int) *HTTP {
 				cons: make(chan aconn.AConn, 2*runtime.NumCPU()),
 			},
 		}
-		s.handleConnect = true
+		s.routed = true
+	case "pprof":
+		mux := http.NewServeMux()
+		mux.HandleFunc("/debug/pprof/", pprof.Index)
+		mux.HandleFunc("/debug/pprof/cmdline", pprof.Cmdline)
+		mux.HandleFunc("/debug/pprof/profile", pprof.Profile)
+		mux.HandleFunc("/debug/pprof/symbol", pprof.Symbol)
+		mux.HandleFunc("/debug/pprof/trace", pprof.Trace)
+		s.l = &pprofAListerWrapper{
+			hbaseAListerWrapper: &hbaseAListerWrapper{
+				cons: make(chan aconn.AConn, 2*runtime.NumCPU()),
+			},
+			mux: mux,
+			c:   make(chan struct{}),
+		}
+		s.routed = true
 	default:
 	}
 	return s
@@ -52,7 +68,7 @@ func NewHTTPServer(typ, host, uri, cert, key string, port int) *HTTP {
 
 func (s *HTTP) Listen() alistener.AListener {
 	log.Println("base http listen: " + net.JoinHostPort(s.host, strconv.Itoa(s.port)) + "/" + s.uri)
-	if s.handleConnect {
+	if s.routed {
 		s.l.setSrv(&http.Server{Addr: net.JoinHostPort(s.host, strconv.Itoa(s.port)), Handler: http.HandlerFunc(s.l.h)})
 		go func() {
 			if len(s.cert) == 0 || len(s.key) == 0 {
