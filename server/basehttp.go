@@ -55,7 +55,7 @@ func NewHTTPServer(typ, host, uri, cert, key string, port int) *HTTP {
 		mux.HandleFunc("/debug/pprof/trace", pprof.Trace)
 		s.l = &pprofAListerWrapper{
 			hbaseAListerWrapper: &hbaseAListerWrapper{
-				cons: make(chan aconn.AConn, 2*runtime.NumCPU()),
+				//cons: make(chan aconn.AConn, 2*runtime.NumCPU()),
 			},
 			mux: mux,
 			c:   make(chan struct{}),
