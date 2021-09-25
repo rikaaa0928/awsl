@@ -10,11 +10,13 @@ A WebSocket Linker
 * socks4/5 proxy (socks,socks5,socks4)
 * websocket over tls (awsl)
 * quic (quic)
+* tcp (tcp)
 
 ### client端
 
 * websocket over tls (awsl)
 * quic (quic)
+* tcp (tcp)
 
 ## awsl.service demo
 
