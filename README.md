@@ -1,37 +1,23 @@
 # awsl
-A WebSocket Linker  
 
-## How To
+A WebSocket Linker
 
-windows10可使用wsl
+## 支持的协议
 
-1. 从release下载对应版本
-2. 运行`awsl -c $configfile`
+### server端
 
-没有`-c $configfile`时读取/etc/awsl/config.json
-配置文件参考`test/server.config.json`和`test/client.config.json` 以及`Caddfile`，配合caddy使用时server端不需要key和crt
+* http proxy (http)
+* socks4/5 proxy (socks,socks5,socks4)
+* websocket over tls (awsl)
+* quic (quic)
 
-## WSL解决方案
-1. 创建wsl_run.sh
-```
-#!/bin/bash
-# service privoxy start >/dev/null 2>&1    # 可使用privoxy完成http -> socks5 目前已支持http
-$GOPATH/bin/awsl > $logfile 2>&1
-```
-2. `chmod +x wsl_run.sh`
-3. `sudo visudo`  
-添加  `$username ALL=(root) NOPASSWD: $path_to_wsl_run.sh`
-4. windows中新建`wsl.vbs`  
-`$wsl_name` 可在cmd中使用 `wsl -l`查看
-```
-Set ws = CreateObject("Wscript.Shell") 
-ws.run "wsl -d $wsl_name -e sudo $path_to_wsl_run.sh", vbhide
-```
-5. 使用任务计划程序添加vbs  
-## windows
-[使用vbs管理awsl.exe](https://blog.bilibili.network/posts/vbs_service/ "vbs")
+### client端
+
+* websocket over tls (awsl)
+* quic (quic)
 
 ## awsl.service demo
+
 ```
 [Unit]
 Description=awsl
