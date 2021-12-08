@@ -16,9 +16,9 @@ steps:
 - task: GoTool@0
   inputs:
     version: '1.17.4
-- script: |
-    go env -w CGO_ENABLED="0"
+- script: go env -w CGO_ENABLED="0"
   displayName: 'Set up the Go workspace'
+  
 - task: Go@0
   inputs:
     command: 'get'
