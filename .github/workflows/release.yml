@@ -19,6 +19,8 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v2
       - uses: actions/setup-go@v2
+        with:
+          go-version: '^1.18.1'
       - name: Build project # This would actually build your project, using zip for an example artifact
         run: go env -w CGO_ENABLED="0" && go mod tidy && echo ${{github.ref_name}} > version && ./build.sh
       - name: Create Release
