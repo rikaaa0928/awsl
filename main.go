@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"flag"
+	"fmt"
 	"log"
 	"runtime"
 	"sync"
@@ -13,9 +14,17 @@ import (
 	"github.com/rikaaa0928/awsl/utils/metrics"
 )
 
+//go:embed version
+var version string
+
 func main() {
+	checkVer := flag.Bool("v", false, "version")
 	cFile := flag.String("c", "/etc/awsl/config.json", "path to config file")
 	flag.Parse()
+	if *checkVer {
+		fmt.Println(version)
+		return
+	}
 	runtime.GOMAXPROCS(int(float64(runtime.NumCPU()) * 1.4))
 	ctx, cancel := context.WithCancel(context.Background())
 	conf := config.NewJsonConfig()
