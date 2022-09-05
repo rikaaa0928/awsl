@@ -1,6 +1,5 @@
 # awsl
 
-A WebSocket Linker
 
 ## 支持的协议
 
