@@ -20,7 +20,7 @@ var QUICConf = struct {
 	remotePort string
 	auth       string
 	skipVerify bool
-	sess       quic.Session
+	sess       quic.Connection
 }{}
 
 func NewQUIC(conf map[string]interface{}) ADialer {
@@ -46,7 +46,7 @@ func NewQUIC(conf map[string]interface{}) ADialer {
 			InsecureSkipVerify: QUICConf.skipVerify,
 			NextProtos:         []string{"awsl-quic"},
 		}
-		var session quic.Session
+		var session quic.Connection
 		var err error
 		var stream quic.Stream
 		if QUICConf.sess == nil {

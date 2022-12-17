@@ -5,6 +5,7 @@ import (
 	_ "embed"
 	"flag"
 	"fmt"
+	"github.com/rikaaa0928/awsl/utils/metrics"
 	"log"
 	"runtime"
 	"sync"
@@ -12,7 +13,6 @@ import (
 	"github.com/rikaaa0928/awsl/config"
 	"github.com/rikaaa0928/awsl/global"
 	"github.com/rikaaa0928/awsl/object"
-	"github.com/rikaaa0928/awsl/utils/metrics"
 )
 
 //go:embed version

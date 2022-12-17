@@ -1,8 +1,14 @@
 lo.bilibili.network
 log
 tls internal
+reverse_proxy /v2/awsl/ {
+    to lo.bilibili.network:12345
+    header_up Host {http.request.hostport}
+    transport http
+}
+
 reverse_proxy /awsl/ {
-    to https://lo.bilibili.network:12347
+    to lo.bilibili.network:12345
     header_up Host {http.request.hostport}
     transport http {
         tls_insecure_skip_verify
