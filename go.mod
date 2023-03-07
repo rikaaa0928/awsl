@@ -6,7 +6,7 @@ require (
 	github.com/lucas-clemente/quic-go v0.31.1
 	github.com/prometheus/client_golang v1.12.0
 	github.com/txthinking/socks5 v0.0.0-20210106113028-328af325654e
-	golang.org/x/net v0.0.0-20220722155237-a158d28d115b
+	golang.org/x/net v0.1.0
 )
 
 require (
@@ -26,7 +26,7 @@ require (
 	github.com/prometheus/procfs v0.7.3 // indirect
 	github.com/txthinking/runnergroup v0.0.0-20200327135940-540a793bb997 // indirect
 	github.com/txthinking/x v0.0.0-20201210150116-a8015a742c8c // indirect
-	golang.org/x/crypto v0.0.0-20211215153901-e495a2d5b3d3 // indirect
+	golang.org/x/crypto v0.1.0 // indirect
 	golang.org/x/exp v0.0.0-20220722155223-a9213eeb770e // indirect
 	golang.org/x/mod v0.6.0-dev.0.20220419223038-86c51ed26bb4 // indirect
 	golang.org/x/sys v0.1.1-0.20221102194838-fc697a31fa06 // indirect
