@@ -65,7 +65,16 @@ func (a *AddrInfo) Parse(network, str string) error {
 
 type BaseConn struct {
 	net.Conn
-	End net.Addr
+	End   net.Addr
+	magic *uint32
+}
+
+func (c *BaseConn) SetMagic(u uint32) {
+	c.magic = &u
+}
+
+func (c *BaseConn) Magic() *uint32 {
+	return c.magic
 }
 
 func (c *BaseConn) EndAddr() net.Addr {

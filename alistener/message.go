@@ -78,6 +78,9 @@ func NewMessageMid(_ context.Context, _ string, conf map[string]interface{}) Acc
 				return ctx, nil, err
 			}
 			conn.SetEndAddr(addr)
+			if conf["type"].(string) == "tcp" {
+				conn.SetMagic(length)
+			}
 			return ctx, conn, nil
 		}
 	}

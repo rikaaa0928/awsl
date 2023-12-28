@@ -2,6 +2,7 @@ package server
 
 import (
 	"context"
+	"github.com/rikaaa0928/awsl/utils/safer"
 	"io"
 	"log"
 	"sync"
@@ -30,6 +31,8 @@ var DefaultAHandler AHandler = func(ctx context.Context, sConn aconn.AConn, rout
 		return
 	}
 	rcConn := aconn.CreateRealConn(cConn)
+	rcConn.RegisterReader(safer.IOSaferFactory(rcConn.Magic(), true))
+	rcConn.RegisterWriter(safer.IOSaferFactory(rcConn.Magic(), false))
 	rcConn.RegisterCloser(aconn.NewMetricsMidForOut(ctx, rcConn.EndAddr().String()).MetricsClose)
 	defer rcConn.Close()
 	w := sync.WaitGroup{}

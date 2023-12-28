@@ -31,16 +31,16 @@ func NewServer(typ string, conf map[string]interface{}) (AServer, error) {
 		}
 		return NewHTTPServer(typ, conf["host"].(string), uri.(string), cert.(string), key.(string),
 			int(conf["port"].(float64))), nil
-	case "quic":
-		cert, ok := conf["cert"]
-		if !ok {
-			cert = ""
-		}
-		key, ok := conf["key"]
-		if !ok {
-			key = ""
-		}
-		return NewBaseQUIC(conf["host"].(string), int(conf["port"].(float64)), cert.(string), key.(string)), nil
+	//case "quic":
+	//	cert, ok := conf["cert"]
+	//	if !ok {
+	//		cert = ""
+	//	}
+	//	key, ok := conf["key"]
+	//	if !ok {
+	//		key = ""
+	//	}
+	//	return NewBaseQUIC(conf["host"].(string), int(conf["port"].(float64)), cert.(string), key.(string)), nil
 	default:
 	}
 	return nil, fmt.Errorf("error type: %v", typ)

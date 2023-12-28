@@ -28,8 +28,10 @@ func NewFactory(conf map[string]interface{}) DialerFactory {
 			d = Free
 		case "awsl":
 			d = NewAWSL(outTag.(string), tagConf)
-		case "quic":
-			d = NewQUIC(tagConf)
+		//case "quic":
+		//	d = NewQUIC(tagConf)
+		case "tcp":
+			d = NewTCP(tagConf)
 		default:
 		}
 		d = DefaultDialMids(d, typ)

@@ -2,6 +2,7 @@ package object
 
 import (
 	"context"
+	"github.com/rikaaa0928/awsl/utils/safer"
 	"log"
 	"sync"
 
@@ -58,6 +59,8 @@ var DefaultObject Object = func(ctx context.Context, wg *sync.WaitGroup, tag str
 		}
 		go func() {
 			rc := aconn.CreateRealConn(ac)
+			rc.RegisterReader(safer.IOSaferFactory(rc.Magic(), true))
+			rc.RegisterWriter(safer.IOSaferFactory(rc.Magic(), false))
 			rc.RegisterCloser(aconn.NewMetricsMid(ctx, tag, typ, rc.EndAddr().String()).MetricsClose)
 			outsConf, err := c.GetMap("outs")
 			if err != nil {

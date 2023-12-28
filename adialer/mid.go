@@ -32,7 +32,7 @@ func NewAddrDataMid(next ADialer) ADialer {
 	}
 }
 
-func NewSendDataMid(next ADialer) ADialer {
+func NewSendDataMid(next ADialer, ty string) ADialer {
 	return func(ctx context.Context, addr net.Addr) (context.Context, aconn.AConn, error) {
 		ctx, conn, err := next(ctx, addr)
 		if err != nil {
@@ -51,6 +51,9 @@ func NewSendDataMid(next ADialer) ADialer {
 		if err != nil {
 			conn.Close()
 			return ctx, nil, err
+		}
+		if "tcp" == ty {
+			conn.SetMagic(uint32(length))
 		}
 		return ctx, conn, nil
 	}

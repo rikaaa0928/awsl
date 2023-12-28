@@ -2,6 +2,7 @@ package server
 
 import (
 	"context"
+	"github.com/rikaaa0928/awsl/utils/safer"
 	"io"
 	"log"
 	"net"
@@ -112,6 +113,8 @@ func (l *hpAListerWrapper) handler() AHandler {
 				return
 			}
 			rcConn := aconn.CreateRealConn(cConn)
+			rcConn.RegisterReader(safer.IOSaferFactory(rcConn.Magic(), true))
+			rcConn.RegisterWriter(safer.IOSaferFactory(rcConn.Magic(), false))
 			rcConn.RegisterCloser(aconn.NewMetricsMid(ctx, "", "", rcConn.EndAddr().String()).MetricsClose)
 			defer rcConn.Close()
 
@@ -139,6 +142,8 @@ func (l *hpAListerWrapper) handler() AHandler {
 	}
 }
 
+var _ aconn.AConn = &HTTPGetConn{}
+
 // HTTPGetConn HTTPGetConn
 type HTTPGetConn struct {
 	W   http.ResponseWriter
@@ -147,6 +152,13 @@ type HTTPGetConn struct {
 	net.Conn
 	ctx    context.Context
 	cancel context.CancelFunc
+}
+
+func (c *HTTPGetConn) Magic() *uint32 {
+	return nil
+}
+
+func (c *HTTPGetConn) SetMagic(u uint32) {
 }
 
 func (c *HTTPGetConn) Close() error {

@@ -50,10 +50,16 @@ func (c *RealConn) RegisterCloser(mid CLoserMid) {
 
 func (c *RealConn) RegisterReader(mid IOMid) {
 	c.read = mid(c.read)
+	//c.read = func(bytes []byte) (int, error) {
+	//	return mid(c.read, bytes)(bytes)
+	//}
 }
 
 func (c *RealConn) RegisterWriter(mid IOMid) {
 	c.write = mid(c.write)
+	//c.write = func(bytes []byte) (int, error) {
+	//	return mid(c.write, bytes)(bytes)
+	//}
 }
 
 type CLoserMid func(closer Closer) Closer
