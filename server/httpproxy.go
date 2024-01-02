@@ -44,7 +44,7 @@ func (l *hpAListerWrapper) h(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, "Hijacking not supported", http.StatusInternalServerError)
 			return
 		}
-		clientConn, _, err := hijacker.Hijack()
+		clientConn, rw, err := hijacker.Hijack()
 		if err != nil {
 			log.Println(err.Error())
 			http.Error(w, err.Error(), http.StatusServiceUnavailable)
@@ -55,6 +55,7 @@ func (l *hpAListerWrapper) h(w http.ResponseWriter, r *http.Request) {
 			Conn:   clientConn,
 			ctx:    ctx,
 			cancel: cancel,
+			rw:     rw,
 		}
 		ac := aconn.NewAConn(con)
 		ac.SetEndAddr(addr)
@@ -92,7 +93,7 @@ func (l *hpAListerWrapper) h(w http.ResponseWriter, r *http.Request) {
 
 		ctx, cancel := context.WithCancel(context.Background())
 		addr := aconn.NewAddr(rHost, rPort, "tcp")
-		hc := &HTTPGetConn{W: w, R: r, End: addr, ctx: ctx, cancel: cancel}
+		hc := &HTTPMethodConn{W: w, R: r, End: addr, ctx: ctx, cancel: cancel}
 
 		l.cons <- hc
 
@@ -102,7 +103,7 @@ func (l *hpAListerWrapper) h(w http.ResponseWriter, r *http.Request) {
 
 func (l *hpAListerWrapper) handler() AHandler {
 	return func(ctx context.Context, sConn aconn.AConn, route arouter.ARouter, getDialer adialer.DialerFactory) {
-		hc, ok := sConn.(*aconn.RealConn).AConn.(*HTTPGetConn)
+		hc, ok := sConn.(*aconn.RealConn).AConn.(*HTTPMethodConn)
 		if ok {
 			log.Println("handle http get")
 			defer sConn.Close()
@@ -137,7 +138,10 @@ func (l *hpAListerWrapper) handler() AHandler {
 			hc.W.WriteHeader(resp.StatusCode)
 			buf := utils.GetMem(65536)
 			defer utils.PutMem(buf)
-			io.CopyBuffer(hc.W, resp.Body, buf)
+			n, err := io.CopyBuffer(hc.W, resp.Body, buf)
+			if err != nil && err != io.EOF {
+				log.Printf("HTTPMethodConn CopyBuffer write %d error: %s", n, err)
+			}
 			// n, err := io.CopyBuffer(hc.W, resp.Body, buf)
 			//log.Println("http", n, err, cConn.EndAddr())
 			hc.Close()
@@ -147,10 +151,10 @@ func (l *hpAListerWrapper) handler() AHandler {
 	}
 }
 
-var _ aconn.AConn = &HTTPGetConn{}
+var _ aconn.AConn = &HTTPMethodConn{}
 
-// HTTPGetConn HTTPGetConn
-type HTTPGetConn struct {
+// HTTPMethodConn HTTPMethodConn
+type HTTPMethodConn struct {
 	W   http.ResponseWriter
 	R   *http.Request
 	End net.Addr
@@ -159,14 +163,14 @@ type HTTPGetConn struct {
 	cancel context.CancelFunc
 }
 
-func (c *HTTPGetConn) Magic() *uint32 {
+func (c *HTTPMethodConn) Magic() *uint32 {
 	return nil
 }
 
-func (c *HTTPGetConn) SetMagic(u uint32) {
+func (c *HTTPMethodConn) SetMagic(u uint32) {
 }
 
-func (c *HTTPGetConn) Close() error {
+func (c *HTTPMethodConn) Close() error {
 	var err error
 	if c.Conn != nil {
 		err = c.Conn.Close()
@@ -175,10 +179,10 @@ func (c *HTTPGetConn) Close() error {
 	return err
 }
 
-func (c *HTTPGetConn) EndAddr() net.Addr {
+func (c *HTTPMethodConn) EndAddr() net.Addr {
 	return c.End
 }
 
-func (c *HTTPGetConn) SetEndAddr(addr net.Addr) {
+func (c *HTTPMethodConn) SetEndAddr(addr net.Addr) {
 	c.End = addr
 }
