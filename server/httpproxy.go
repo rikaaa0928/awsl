@@ -62,7 +62,7 @@ func (l *hpAListerWrapper) h(w http.ResponseWriter, r *http.Request) {
 
 		<-con.ctx.Done()
 	} else {
-		log.Println("http proxy not connect.", r.Method, r.Host)
+		log.Println("http proxy Method not CONNECT.", r.Method, r.Host)
 		rHost := ""
 		rPort := 80
 		var err error

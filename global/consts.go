@@ -3,7 +3,7 @@ package global
 type constString string
 
 const (
-	CTXReceiveAuth constString = "receiveAuth"
+	//CTXReceiveAuth constString = "receiveAuth"
 	//CTXSendAuth    constString = "sendAuth"
 	CTXOutTag  constString = "outTag"
 	CTXOutType constString = "outType"

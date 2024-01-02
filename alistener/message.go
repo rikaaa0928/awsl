@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/rikaaa0928/awsl/utils/safer"
 	"io"
 
 	"github.com/rikaaa0928/awsl/aconn"
@@ -14,7 +15,7 @@ import (
 	"github.com/rikaaa0928/awsl/utils/ctxdatamap"
 )
 
-func NewMessageMid(_ context.Context, _ string, conf map[string]interface{}) AcceptMid {
+func NewMessageMid(_ context.Context, tag string, conf map[string]interface{}) AcceptMid {
 	return func(next Acceptor) Acceptor {
 		return func(ctx context.Context) (context.Context, aconn.AConn, error) {
 			ctx, conn, err := next(ctx)
@@ -27,15 +28,15 @@ func NewMessageMid(_ context.Context, _ string, conf map[string]interface{}) Acc
 				conn.Close()
 				return ctx, nil, errors.New("no auth in conf. map:" + fmt.Sprintf("%+v", conf))
 			}
-			rAuth := ctx.Value(global.CTXReceiveAuth)
-			if conn.EndAddr() != nil && rAuth != nil {
-				if auth.(string) != rAuth.(string) {
-					conn.Close()
-					return ctx, nil, errors.New("auth failed")
-				} else {
-					return ctx, conn, nil
-				}
-			}
+			//rAuth := ctx.Value(global.CTXReceiveAuth)
+			//if conn.EndAddr() != nil && rAuth != nil {
+			//	if auth.(string) != rAuth.(string) {
+			//		conn.Close()
+			//		return ctx, nil, errors.New("auth failed")
+			//	} else {
+			//		return ctx, conn, nil
+			//	}
+			//}
 			lenBytes := utils.GetMem(4)
 			defer utils.PutMem(lenBytes)
 			_, err = io.ReadFull(conn, lenBytes)
@@ -53,10 +54,13 @@ func NewMessageMid(_ context.Context, _ string, conf map[string]interface{}) Acc
 				return ctx, nil, err
 			}
 			data := buf[:n]
+			if tag == "tcp" {
+				safer.Handle(data, safer.Magic(byte(length)), true)
+			}
 			ctx = ctxdatamap.Parse(ctx, data)
 
 			//fmt.Println(length, len(data), string(data), string(ctxdatamap.Bytes(ctx)))
-			rAuth = ctxdatamap.Get(ctx, global.TransferAuth)
+			rAuth := ctxdatamap.Get(ctx, global.TransferAuth)
 			if rAuth == nil {
 				conn.Close()
 				return ctx, nil, errors.New("no auth in map. map:" + fmt.Sprintf("%+v", string(ctxdatamap.Bytes(ctx))) + "\nread message data:" + string(data))
@@ -78,7 +82,7 @@ func NewMessageMid(_ context.Context, _ string, conf map[string]interface{}) Acc
 				return ctx, nil, err
 			}
 			conn.SetEndAddr(addr)
-			if conf["type"].(string) == "tcp" {
+			if tag == "tcp" {
 				conn.SetMagic(length)
 			}
 			return ctx, conn, nil

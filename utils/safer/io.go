@@ -8,34 +8,47 @@ func IOSaferFactory(m *uint32, read bool) aconn.IOMid {
 			return io
 		}
 		magic := byte(*m)
-		magic += 128
-		if magic == 0 {
-			magic = 128
-		}
+		//magic += 128
+		//if magic == 0 {
+		//	magic = 128
+		//}
+		magic = Magic(magic)
 		return func(bytes []byte) (int, error) {
 			if !read {
-				for i, v := range bytes {
-					if read {
-						bytes[i] = v - magic
-					} else {
-						bytes[i] = v + magic
-					}
-				}
+				Handle(bytes, magic, false)
 			}
 			n, err := io(bytes)
 			if err != nil {
 				return n, err
 			}
 			if read {
-				for i, v := range bytes {
-					if read {
-						bytes[i] = v - magic
-					} else {
-						bytes[i] = v + magic
-					}
-				}
+				Handle(bytes, magic, true)
 			}
 			return n, err
 		}
 	}
+}
+
+func Magic(magic byte) byte {
+	magic += 128
+	if magic == 0 {
+		magic = 128
+	}
+	return magic
+}
+
+func Handle(bytes []byte, magic byte, decode bool) {
+	for i, v := range bytes {
+		if decode {
+			bytes[i] = v - magic
+		} else {
+			bytes[i] = v + magic
+		}
+	}
+}
+
+func HandleStr(str string, magic byte, decode bool) string {
+	bs := []byte(str)
+	Handle(bs, magic, decode)
+	return string(bs)
 }

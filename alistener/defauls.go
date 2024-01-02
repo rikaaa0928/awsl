@@ -8,7 +8,7 @@ func DefaultAcceptMids(ctx context.Context, l AcceptMidor, typ, tag string, conf
 	switch typ {
 	case "socks", "socks5", "socks4":
 		l.RegisterAcceptor(NewSocksAcceptMid(ctx, tag, conf))
-	case "awsl", "tcp", "h2c", "quic":
+	case "awsl", "tcp":
 		l.RegisterAcceptor(NewMessageMid(ctx, tag, conf))
 	default:
 	}

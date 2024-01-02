@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/binary"
 	"encoding/json"
+	"github.com/rikaaa0928/awsl/utils/safer"
 	"net"
 
 	"github.com/rikaaa0928/awsl/aconn"
@@ -47,6 +48,9 @@ func NewSendDataMid(next ADialer, ty string) ADialer {
 		lenBytes := utils.GetMem(4)
 		defer utils.PutMem(lenBytes)
 		binary.BigEndian.PutUint32(lenBytes, uint32(length))
+		if "tcp" == ty {
+			safer.Handle(data, safer.Magic(byte(length)), false)
+		}
 		_, err = conn.Write(append(lenBytes, data...))
 		if err != nil {
 			conn.Close()
