@@ -64,7 +64,12 @@ func (l *hpAListerWrapper) h(w http.ResponseWriter, r *http.Request) {
 	} else {
 		log.Println("http proxy Method not CONNECT.", r.Method, r.Host)
 		rHost := ""
-		rPort := 80
+		rPort := func() int {
+			if strings.ToLower(r.URL.Scheme) == "https" {
+				return 443
+			}
+			return 80
+		}()
 		var err error
 		// host port
 		if strings.Contains(r.Host, ":") {
