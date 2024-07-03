@@ -40,3 +40,4 @@ StandardError=file:awsl.error.log
 [Install]
 WantedBy=multi-user.target
 ```
+test
