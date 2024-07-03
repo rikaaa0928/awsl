@@ -41,3 +41,4 @@ StandardError=file:awsl.error.log
 WantedBy=multi-user.target
 ```
 test
+test2
